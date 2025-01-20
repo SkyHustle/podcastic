@@ -25,7 +25,13 @@ export async function GET() {
     console.log(chalk.blue.bold('=======================\n'))
 
     const response = await fetch(
-      'https://api.podcastindex.org/api/1.0/search/byterm?q=this%20week%20in%20startups',
+      'https://api.podcastindex.org/api/1.0/podcasts/trending?' +
+        new URLSearchParams({
+          max: '10',
+          lang: 'en',
+          cat: '9,11,12,102,112',
+          pretty: 'true',
+        }),
       {
         headers: {
           'User-Agent': 'PodAI/1.0',
