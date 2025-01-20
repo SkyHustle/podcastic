@@ -6,7 +6,7 @@ export function SearchButton() {
       className="group flex items-center text-sm font-medium transition-colors hover:text-gray-900"
       onClick={async () => {
         try {
-          const response = await fetch('/api/search-podcast')
+          const response = await fetch('/api/trending-podcasts')
           const data = await response.json()
           if (!data.success) {
             throw new Error('Failed to fetch podcast')
