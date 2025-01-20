@@ -3,6 +3,29 @@ import crypto from 'crypto'
 import chalk from 'chalk'
 import { z } from 'zod'
 
+const prettyPrintWithColoredValues = (obj: any, indent = 0): string => {
+  const spaces = ' '.repeat(indent)
+
+  if (Array.isArray(obj)) {
+    const items = obj
+      .map((item) => prettyPrintWithColoredValues(item, indent + 2))
+      .join(',\n')
+    return `[\n${items}\n${spaces}]`
+  }
+
+  if (typeof obj === 'object' && obj !== null) {
+    const entries = Object.entries(obj)
+      .map(([key, value]) => {
+        const formattedValue = prettyPrintWithColoredValues(value, indent + 2)
+        return `${spaces}  "${key}": ${formattedValue}`
+      })
+      .join(',\n')
+    return `{\n${entries}\n${spaces}}`
+  }
+
+  return chalk.green(JSON.stringify(obj))
+}
+
 const PodcastSchema = z.object({
   status: z.literal('true').or(z.literal(true)),
   feeds: z.array(
@@ -53,7 +76,7 @@ export async function GET() {
     const response = await fetch(
       'https://api.podcastindex.org/api/1.0/podcasts/trending?' +
         new URLSearchParams({
-          max: '5',
+          max: '10',
           lang: 'en',
           cat: '9,11,12,102,112',
           pretty: 'true',
@@ -89,7 +112,7 @@ export async function GET() {
         )
       }
 
-      console.log(chalk.green(JSON.stringify(validated.data, null, 2)))
+      console.log(prettyPrintWithColoredValues(validated.data))
       console.log(chalk.magenta.bold('==================\n'))
       return NextResponse.json(validated.data)
     } catch (parseError) {
