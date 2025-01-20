@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
+import chalk from 'chalk'
 import { z } from 'zod'
 
 const prettyPrint = (obj: any): void => {
-  console.log(JSON.stringify(obj, null, 2))
+  console.log(chalk.green(JSON.stringify(obj, null, 2)))
 }
 
 const PodcastSchema = z.object({
