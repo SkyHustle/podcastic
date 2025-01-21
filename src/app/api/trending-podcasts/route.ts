@@ -72,6 +72,16 @@ export async function GET() {
 
     if (!validated.success) {
       console.log('Validation Error:', validated.error)
+
+      // Log the problematic feed
+      const errorPath = validated.error.errors[0].path
+      const feedIndex = errorPath[1] // Gets the index from ['feeds', index, 'fieldName']
+      console.log('\nProblematic Feed Data:')
+      console.log('Feed Index:', feedIndex)
+      console.log('Feed:', data.feeds[feedIndex])
+      console.log('\nSpecific field with error:', errorPath[2])
+      console.log('Field value:', data.feeds[feedIndex][errorPath[2]])
+
       return NextResponse.json(
         { error: validated.error.errors },
         { status: 400 },

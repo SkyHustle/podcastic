@@ -17,7 +17,7 @@ export function SearchButton() {
         }
       }}
     >
-      Search TWIS
+      FETCH
     </button>
   )
 }
