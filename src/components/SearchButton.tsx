@@ -17,7 +17,7 @@ export function SearchButton() {
         }
       }}
     >
-      FETCH
+      Fetch Trending Podcasts
     </button>
   )
 }

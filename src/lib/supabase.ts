@@ -17,62 +17,42 @@ export const supabase = createClient(
 export const PodcastSchema = z.object({
   id: z.number(),
   created_at: z.string(),
-  url: z.string().url(),
+  podcast_guid: z.string(),
   title: z.string(),
+  url: z.string().url(),
+  original_url: z.string().nullable(),
+  link: z.string().nullable(),
   description: z.string(),
   author: z.string(),
-  image_url: z.string().url(),
-  artwork_url: z.string().url(),
-  newest_item_publish_time: z.number(),
+  image: z.string().url(),
+  artwork: z.string().url(),
   itunes_id: z.number().nullable(),
-  trend_score: z.number(),
   language: z.string(),
   categories: z.record(z.string(), z.string()),
+  episode_count: z.number().default(0),
+})
+
+export const TrendingPodcastSchema = z.object({
+  id: z.number(),
+  created_at: z.string(),
+  podcast_id: z.number(),
+  trend_score: z.number(),
+  trending_at: z.string(),
 })
 
 export type Podcast = z.infer<typeof PodcastSchema>
 export type PodcastInsert = Omit<Podcast, 'id' | 'created_at'>
+export type TrendingPodcast = z.infer<typeof TrendingPodcastSchema>
+export type TrendingPodcastInsert = Omit<TrendingPodcast, 'id' | 'created_at'>
 
 export async function setupDatabase() {
   // Check if the table exists
   const { error } = await supabase.from('podcasts').select('id').limit(1)
 
   if (error?.code === 'PGRST204') {
-    // Table doesn't exist
-    console.error(
-      'Podcasts table does not exist. Please run the following SQL in your Supabase SQL editor:',
+    throw new Error(
+      'Podcasts table does not exist. Please create the required tables first.',
     )
-    console.error(`
-      create table public.podcasts (
-        id bigint primary key generated always as identity,
-        created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-        url text unique not null,
-        title text not null,
-        description text not null,
-        author text not null,
-        image_url text not null,
-        artwork_url text not null,
-        newest_item_publish_time bigint not null,
-        itunes_id bigint,
-        trend_score double precision not null,
-        language text not null,
-        categories jsonb not null
-      );
-      
-      -- Create an index on the url for faster upserts
-      create index podcasts_url_idx on public.podcasts(url);
-      
-      -- Enable Row Level Security (RLS)
-      alter table public.podcasts enable row level security;
-      
-      -- Create a policy that allows all operations for authenticated users
-      create policy "Enable all operations for authenticated users" on public.podcasts
-        for all
-        to authenticated
-        using (true)
-        with check (true);
-    `)
-    throw new Error('Database setup required')
   } else if (error) {
     console.error('Error checking database:', error)
     throw error

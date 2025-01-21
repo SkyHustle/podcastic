@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-import chalk from 'chalk'
 import { z } from 'zod'
 import DOMPurify from 'isomorphic-dompurify'
-import { supabase, type PodcastInsert, setupDatabase } from '@/lib/supabase'
-
-const prettyPrint = (obj: any): void => {
-  console.log(chalk.green(JSON.stringify(obj, null, 2)))
-}
+import {
+  supabase,
+  type Podcast,
+  type PodcastInsert,
+  type TrendingPodcastInsert,
+} from '@/lib/supabase'
 
 // Configure DOMPurify to only allow basic formatting tags
 const sanitizeHtml = (html: string) => {
@@ -42,9 +42,6 @@ const PodcastIndexSchema = z.object({
 
 export async function GET() {
   try {
-    // Ensure database is setup
-    await setupDatabase()
-
     const apiKey = process.env.PODCAST_INDEX_API_KEY?.trim()
     const apiSecret = process.env.PODCAST_INDEX_API_SECRET?.trim()
 
@@ -61,7 +58,7 @@ export async function GET() {
     const response = await fetch(
       'https://api.podcastindex.org/api/1.0/podcasts/trending?' +
         new URLSearchParams({
-          max: '30',
+          max: '10',
           lang: 'en',
           cat: '9,11,12,102,112',
           pretty: 'true',
@@ -80,60 +77,68 @@ export async function GET() {
     const validated = PodcastIndexSchema.safeParse(data)
 
     if (!validated.success) {
-      console.log('Validation Error:', validated.error)
-
-      // Log the problematic feed
-      const errorPath = validated.error.errors[0].path
-      const feedIndex = errorPath[1] // Gets the index from ['feeds', index, 'fieldName']
-      console.log('\nProblematic Feed Data:')
-      console.log('Feed Index:', feedIndex)
-      console.log('Feed:', data.feeds[feedIndex])
-      console.log('\nSpecific field with error:', errorPath[2])
-      console.log('Field value:', data.feeds[feedIndex][errorPath[2]])
-
       return NextResponse.json(
         { error: validated.error.errors },
         { status: 400 },
       )
     }
 
-    console.log('\n=== API Response ===')
-    prettyPrint(validated.data)
-    console.log('==================\n')
-
-    // Transform and store podcasts in Supabase
+    // Transform and store the podcasts
     const podcastsToInsert: PodcastInsert[] = validated.data.feeds.map(
       (feed) => ({
+        podcast_guid: feed.id.toString(),
         url: feed.url,
         title: feed.title,
         description: sanitizeHtml(feed.description),
         author: feed.author,
-        image_url: feed.image,
-        artwork_url: feed.artwork,
-        newest_item_publish_time: feed.newestItemPublishTime,
+        original_url: null,
+        link: null,
+        image: feed.image,
+        artwork: feed.artwork,
         itunes_id: feed.itunesId,
-        trend_score: feed.trendScore,
         language: feed.language,
         categories: feed.categories,
+        episode_count: 0,
       }),
     )
 
-    // Upsert podcasts based on URL to avoid duplicates
-    const { error } = await supabase
+    // Upsert podcasts based on podcast_guid
+    const { data: insertedPodcasts, error: podcastError } = await supabase
       .from('podcasts')
-      .upsert(podcastsToInsert, { onConflict: 'url' })
+      .upsert(podcastsToInsert, { onConflict: 'podcast_guid' })
+      .select()
 
-    if (error) {
-      console.error('Supabase Error:', error)
+    if (podcastError || !insertedPodcasts) {
       return NextResponse.json(
         { error: 'Failed to store podcasts' },
         { status: 500 },
       )
     }
 
+    // Create/update trending references
+    const trendingToInsert: TrendingPodcastInsert[] = insertedPodcasts.map(
+      (podcast: Podcast, index: number) => ({
+        podcast_id: podcast.id,
+        trend_score: validated.data.feeds[index].trendScore,
+        trending_at: new Date().toISOString(),
+      }),
+    )
+
+    const { error: trendingError } = await supabase
+      .from('trending_podcasts')
+      .upsert(trendingToInsert, {
+        onConflict: 'podcast_id,trending_at',
+      })
+
+    if (trendingError) {
+      return NextResponse.json(
+        { error: 'Failed to store trending data' },
+        { status: 500 },
+      )
+    }
+
     return NextResponse.json(validated.data)
   } catch (error) {
-    console.log('\nError:', error instanceof Error ? error.message : error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 },
