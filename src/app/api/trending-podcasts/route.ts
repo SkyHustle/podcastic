@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
 import { z } from 'zod'
+import { supabase, type PodcastInsert, setupDatabase } from '@/lib/supabase'
 
 const prettyPrint = (obj: any): void => {
   console.log(chalk.green(JSON.stringify(obj, null, 2)))
 }
 
-const PodcastSchema = z.object({
+const PodcastIndexSchema = z.object({
   status: z.literal('true').or(z.literal(true)),
   feeds: z.array(
     z.object({
@@ -32,6 +33,9 @@ const PodcastSchema = z.object({
 
 export async function GET() {
   try {
+    // Ensure database is setup
+    await setupDatabase()
+
     const apiKey = process.env.PODCAST_INDEX_API_KEY?.trim()
     const apiSecret = process.env.PODCAST_INDEX_API_SECRET?.trim()
 
@@ -64,7 +68,7 @@ export async function GET() {
     )
 
     const data = await response.json()
-    const validated = PodcastSchema.safeParse(data)
+    const validated = PodcastIndexSchema.safeParse(data)
 
     if (!validated.success) {
       console.log('Validation Error:', validated.error)
@@ -77,6 +81,36 @@ export async function GET() {
     console.log('\n=== API Response ===')
     prettyPrint(validated.data)
     console.log('==================\n')
+
+    // Transform and store podcasts in Supabase
+    const podcastsToInsert: PodcastInsert[] = validated.data.feeds.map(
+      (feed) => ({
+        url: feed.url,
+        title: feed.title,
+        description: feed.description,
+        author: feed.author,
+        image_url: feed.image,
+        artwork_url: feed.artwork,
+        newest_item_publish_time: feed.newestItemPublishTime,
+        itunes_id: feed.itunesId,
+        trend_score: feed.trendScore,
+        language: feed.language,
+        categories: feed.categories,
+      }),
+    )
+
+    // Upsert podcasts based on URL to avoid duplicates
+    const { error } = await supabase
+      .from('podcasts')
+      .upsert(podcastsToInsert, { onConflict: 'url' })
+
+    if (error) {
+      console.error('Supabase Error:', error)
+      return NextResponse.json(
+        { error: 'Failed to store podcasts' },
+        { status: 500 },
+      )
+    }
 
     return NextResponse.json(validated.data)
   } catch (error) {
