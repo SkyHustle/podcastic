@@ -2,10 +2,19 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
 import { z } from 'zod'
+import DOMPurify from 'isomorphic-dompurify'
 import { supabase, type PodcastInsert, setupDatabase } from '@/lib/supabase'
 
 const prettyPrint = (obj: any): void => {
   console.log(chalk.green(JSON.stringify(obj, null, 2)))
+}
+
+// Configure DOMPurify to only allow basic formatting tags
+const sanitizeHtml = (html: string) => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'a'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+  })
 }
 
 const PodcastIndexSchema = z.object({
@@ -52,7 +61,7 @@ export async function GET() {
     const response = await fetch(
       'https://api.podcastindex.org/api/1.0/podcasts/trending?' +
         new URLSearchParams({
-          max: '10',
+          max: '30',
           lang: 'en',
           cat: '9,11,12,102,112',
           pretty: 'true',
@@ -97,7 +106,7 @@ export async function GET() {
       (feed) => ({
         url: feed.url,
         title: feed.title,
-        description: feed.description,
+        description: sanitizeHtml(feed.description),
         author: feed.author,
         image_url: feed.image,
         artwork_url: feed.artwork,
