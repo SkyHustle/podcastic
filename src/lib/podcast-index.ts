@@ -36,3 +36,36 @@ export const PodcastIndexSchema = z.object({
   description: z.string(),
   status_code: z.number().optional(),
 })
+
+// Schema for podcast episodes API response
+export const PodcastEpisodesSchema = z.object({
+  status: z.literal('true').or(z.literal(true)),
+  items: z.array(
+    z.object({
+      id: z.number(),
+      title: z.string(),
+      link: z.string().url().nullable().optional(),
+      description: z.string(),
+      guid: z.string(),
+      datePublished: z.number(),
+      datePublishedPretty: z.string(),
+      enclosureUrl: z.string().url(),
+      enclosureType: z.string(),
+      enclosureLength: z.number().nullable().optional(),
+      duration: z.number().nullable().optional(),
+      explicit: z.number(),
+      episode: z.number().nullable().optional(),
+      episodeType: z.string().nullable().optional(),
+      season: z.number().nullable().optional(),
+      image: z.string().url().nullable().optional(),
+      feedItunesId: z.number().nullable().optional(),
+      feedImage: z.string().url().nullable().optional(),
+      feedId: z.number(),
+      podcastGuid: z.string(),
+      transcriptUrl: z.string().url().nullable().optional(),
+      chaptersUrl: z.string().url().nullable().optional(),
+    }),
+  ),
+  count: z.number(),
+  description: z.string(),
+})

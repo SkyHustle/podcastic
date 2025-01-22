@@ -2,7 +2,44 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
 import { supabase, type PodcastInsert } from '@/lib/supabase'
-import { sanitizeHtml, PodcastIndexSchema } from '@/lib/podcast-index'
+import {
+  sanitizeHtml,
+  PodcastIndexSchema,
+  PodcastEpisodesSchema,
+} from '@/lib/podcast-index'
+import type { EpisodeInsert } from '@/lib/types'
+
+async function fetchPodcastEpisodes(
+  podcastGuid: string,
+  apiKey: string,
+  apiSecret: string,
+) {
+  const apiHeaderTime = Math.floor(Date.now() / 1000)
+  const hash = crypto
+    .createHash('sha1')
+    .update(apiKey + apiSecret + apiHeaderTime)
+    .digest('hex')
+
+  const response = await fetch(
+    'https://api.podcastindex.org/api/1.0/episodes/bypodcastguid?' +
+      new URLSearchParams({
+        guid: podcastGuid,
+        max: '10', // Get latest 10 episodes
+        pretty: 'true',
+      }),
+    {
+      headers: {
+        'User-Agent': 'PodAI/1.0',
+        'X-Auth-Date': apiHeaderTime.toString(),
+        'X-Auth-Key': apiKey,
+        Authorization: hash,
+      },
+    },
+  )
+
+  const data = await response.json()
+  return PodcastEpisodesSchema.safeParse(data)
+}
 
 export async function GET(request: Request) {
   try {
@@ -69,56 +106,110 @@ export async function GET(request: Request) {
       .eq('podcast_guid', feed.podcastGuid)
       .single()
 
-    if (existingPodcast) {
-      return NextResponse.json({
-        podcast: existingPodcast,
-        source: 'database',
-      })
+    let podcast = existingPodcast
+    let source = 'database'
+
+    if (!existingPodcast) {
+      // If not exists, insert the new podcast
+      const podcastToInsert: PodcastInsert = {
+        podcast_guid: feed.podcastGuid,
+        url: feed.url,
+        title: feed.title,
+        description: sanitizeHtml(feed.description),
+        author: feed.author,
+        original_url: feed.originalUrl ?? null,
+        link: feed.link ?? null,
+        image: feed.image,
+        artwork: feed.artwork,
+        itunes_id: feed.itunesId,
+        language: feed.language,
+        categories: feed.categories,
+        episode_count: feed.episodeCount ?? 0,
+      }
+
+      const { data: insertedPodcast, error: insertError } = await supabase
+        .from('podcasts')
+        .insert(podcastToInsert)
+        .select()
+        .single()
+
+      if (insertError) {
+        return NextResponse.json(
+          { error: 'Failed to store podcast' },
+          { status: 500 },
+        )
+      }
+
+      podcast = insertedPodcast
+      source = 'api'
     }
 
-    // If not exists, insert the new podcast
-    const podcastToInsert: PodcastInsert = {
-      podcast_guid: feed.podcastGuid,
-      url: feed.url,
-      title: feed.title,
-      description: sanitizeHtml(feed.description),
-      author: feed.author,
-      original_url: feed.originalUrl ?? null,
-      link: feed.link ?? null,
-      image: feed.image,
-      artwork: feed.artwork,
-      itunes_id: feed.itunesId,
-      language: feed.language,
-      categories: feed.categories,
-      episode_count: feed.episodeCount ?? 0,
-    }
+    // Fetch episodes
+    const episodesResult = await fetchPodcastEpisodes(
+      feed.podcastGuid,
+      apiKey,
+      apiSecret,
+    )
 
-    const { data: insertedPodcast, error: insertError } = await supabase
-      .from('podcasts')
-      .insert(podcastToInsert)
-      .select()
-      .single()
-
-    if (insertError) {
-      return NextResponse.json(
-        { error: 'Failed to store podcast' },
-        { status: 500 },
+    if (!episodesResult.success) {
+      console.error('Failed to validate episodes:', episodesResult.error)
+    } else {
+      // Insert episodes
+      const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
+        (item) => ({
+          episode_guid: item.guid,
+          podcast_guid: feed.podcastGuid,
+          title: item.title,
+          description: sanitizeHtml(item.description),
+          link: item.link ?? null,
+          date_published: new Date(item.datePublished * 1000).toISOString(),
+          enclosure_url: item.enclosureUrl,
+          enclosure_type: item.enclosureType,
+          enclosure_length: item.enclosureLength ?? null,
+          duration: item.duration ?? null,
+          image: item.image ?? null,
+          explicit: item.explicit === 1,
+          episode_type: item.episodeType ?? null,
+          season: item.season ?? null,
+          episode_number: item.episode ?? null,
+          chapters_url: item.chaptersUrl ?? null,
+          transcript_url: item.transcriptUrl ?? null,
+        }),
       )
-    }
 
-    // Log the fetched podcast
-    console.log('\n=== Podcast Fetched ===')
-    console.log(
-      chalk.green(`
+      const { error: episodesError } = await supabase
+        .from('episodes')
+        .upsert(episodesToInsert, { onConflict: 'episode_guid' })
+
+      if (episodesError) {
+        console.error('Failed to store episodes:', episodesError)
+      }
+
+      // Log the fetched podcast and episodes
+      console.log('\n=== Podcast Fetched ===')
+      console.log(
+        chalk.green(`
 Title: ${feed.title}
 Author: ${feed.author}
 Categories: ${Object.values(feed.categories).join(', ')}`),
-    )
-    console.log('=====================\n')
+      )
+
+      console.log('\n=== Latest Episodes ===')
+      episodesResult.data.items.forEach((episode, index) => {
+        console.log(
+          chalk.green(`
+${index + 1}. ${episode.title}
+   Published: ${episode.datePublishedPretty}
+   Transcript: ${episode.transcriptUrl || 'None'}`),
+        )
+      })
+      console.log('\n=====================\n')
+    }
 
     return NextResponse.json({
-      podcast: insertedPodcast,
-      source: 'api',
+      podcast,
+      source,
+      episodeCount: episodesResult.success ? episodesResult.data.count : 0,
     })
   } catch (error) {
     return NextResponse.json(
