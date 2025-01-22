@@ -8,7 +8,7 @@ import { AudioPlayer } from '@/components/player/AudioPlayer'
 import { TinyWaveFormIcon } from '@/components/TinyWaveFormIcon'
 import { Waveform } from '@/components/Waveform'
 import posterImage from '@/images/poster.png'
-import { SearchButton } from '@/components/SearchButton'
+import { PodcastIndexButton } from '@/components/PodcastIndexButton'
 
 function SpotifyIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   return (
@@ -141,7 +141,16 @@ export default function MainLayout({
                 </li>
               ))}
               <li className="flex">
-                <SearchButton />
+                <PodcastIndexButton
+                  endpoint="trending-podcasts"
+                  label="Fetch Trending"
+                />
+              </li>
+              <li className="flex">
+                <PodcastIndexButton
+                  endpoint="fetch-podcast"
+                  label="Fetch Build Your SaaS"
+                />
               </li>
             </ul>
           </section>
