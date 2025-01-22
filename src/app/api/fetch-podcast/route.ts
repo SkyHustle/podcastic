@@ -14,6 +14,7 @@ async function fetchPodcastEpisodes(
   apiKey: string,
   apiSecret: string,
 ) {
+  const start = Date.now()
   const apiHeaderTime = Math.floor(Date.now() / 1000)
   const hash = crypto
     .createHash('sha1')
@@ -38,10 +39,13 @@ async function fetchPodcastEpisodes(
   )
 
   const data = await response.json()
-  return PodcastEpisodesSchema.safeParse(data)
+  const result = PodcastEpisodesSchema.safeParse(data)
+  console.log(chalk.blue(`Fetched episodes in ${Date.now() - start}ms`))
+  return result
 }
 
 export async function GET(request: Request) {
+  const totalStart = Date.now()
   try {
     const { searchParams } = new URL(request.url)
     const title = searchParams.get('title')
@@ -60,6 +64,7 @@ export async function GET(request: Request) {
       throw new Error('Missing API credentials')
     }
 
+    const searchStart = Date.now()
     const apiHeaderTime = Math.floor(Date.now() / 1000)
     const hash = crypto
       .createHash('sha1')
@@ -83,6 +88,8 @@ export async function GET(request: Request) {
     )
 
     const data = await response.json()
+    console.log(chalk.blue(`Searched podcast in ${Date.now() - searchStart}ms`))
+
     const validated = PodcastIndexSchema.safeParse(data)
 
     if (!validated.success) {
@@ -100,17 +107,20 @@ export async function GET(request: Request) {
     const feed = validated.data.feeds[0]
 
     // Check if podcast already exists in our database
+    const dbStart = Date.now()
     const { data: existingPodcast } = await supabase
       .from('podcasts')
       .select('*')
       .eq('podcast_guid', feed.podcastGuid)
       .single()
+    console.log(chalk.blue(`Database check in ${Date.now() - dbStart}ms`))
 
     let podcast = existingPodcast
     let source = 'database'
 
     if (!existingPodcast) {
       // If not exists, insert the new podcast
+      const insertStart = Date.now()
       const podcastToInsert: PodcastInsert = {
         podcast_guid: feed.podcastGuid,
         url: feed.url,
@@ -139,6 +149,9 @@ export async function GET(request: Request) {
           { status: 500 },
         )
       }
+      console.log(
+        chalk.blue(`Inserted podcast in ${Date.now() - insertStart}ms`),
+      )
 
       podcast = insertedPodcast
       source = 'api'
@@ -155,6 +168,7 @@ export async function GET(request: Request) {
       console.error('Failed to validate episodes:', episodesResult.error)
     } else {
       // Insert episodes
+      const episodeStart = Date.now()
       const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
         (item) => ({
           episode_guid: item.guid,
@@ -184,6 +198,9 @@ export async function GET(request: Request) {
       if (episodesError) {
         console.error('Failed to store episodes:', episodesError)
       }
+      console.log(
+        chalk.blue(`Stored episodes in ${Date.now() - episodeStart}ms`),
+      )
 
       // Log the fetched podcast and episodes
       console.log('\n=== Podcast Fetched ===')
@@ -206,12 +223,15 @@ ${index + 1}. ${episode.title}
       console.log('\n=====================\n')
     }
 
+    console.log(chalk.blue(`Total request time: ${Date.now() - totalStart}ms`))
+
     return NextResponse.json({
       podcast,
       source,
       episodeCount: episodesResult.success ? episodesResult.data.count : 0,
     })
   } catch (error) {
+    console.log(chalk.red(`Request failed after ${Date.now() - totalStart}ms`))
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 },
