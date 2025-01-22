@@ -4,8 +4,18 @@ import chalk from 'chalk'
 import { supabase, type PodcastInsert } from '@/lib/supabase'
 import { sanitizeHtml, PodcastIndexSchema } from '@/lib/podcast-index'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const title = searchParams.get('title')
+
+    if (!title) {
+      return NextResponse.json(
+        { error: 'Title parameter is required' },
+        { status: 400 },
+      )
+    }
+
     const apiKey = process.env.PODCAST_INDEX_API_KEY?.trim()
     const apiSecret = process.env.PODCAST_INDEX_API_SECRET?.trim()
 
@@ -22,7 +32,7 @@ export async function GET() {
     const response = await fetch(
       'https://api.podcastindex.org/api/1.0/search/bytitle?' +
         new URLSearchParams({
-          q: 'Build Your SaaS',
+          q: title,
           pretty: 'true',
         }),
       {
