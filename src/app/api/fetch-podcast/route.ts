@@ -1,39 +1,8 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { z } from 'zod'
-import DOMPurify from 'isomorphic-dompurify'
-import { supabase, type PodcastInsert } from '@/lib/supabase'
 import chalk from 'chalk'
-
-const sanitizeHtml = (html: string) => {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'a'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-  })
-}
-
-const PodcastIndexSchema = z.object({
-  status: z.literal('true').or(z.literal(true)),
-  feeds: z.array(
-    z.object({
-      id: z.number(),
-      url: z.string().url(),
-      title: z.string(),
-      description: z.string(),
-      author: z.string(),
-      image: z.string().url(),
-      artwork: z.string().url(),
-      link: z.string().url().nullable(),
-      originalUrl: z.string().url().nullable(),
-      itunesId: z.number().nullable(),
-      language: z.string(),
-      categories: z.record(z.string(), z.string()),
-    }),
-  ),
-  count: z.number(),
-  description: z.string(),
-  status_code: z.number().optional(),
-})
+import { supabase, type PodcastInsert } from '@/lib/supabase'
+import { sanitizeHtml, PodcastIndexSchema } from '@/lib/podcast-index'
 
 export async function GET() {
   try {
@@ -101,14 +70,14 @@ export async function GET() {
       title: feed.title,
       description: sanitizeHtml(feed.description),
       author: feed.author,
-      original_url: feed.originalUrl,
-      link: feed.link,
+      original_url: feed.originalUrl ?? null,
+      link: feed.link ?? null,
       image: feed.image,
       artwork: feed.artwork,
       itunes_id: feed.itunesId,
       language: feed.language,
       categories: feed.categories,
-      episode_count: 0,
+      episode_count: feed.episodeCount ?? 0,
     }
 
     const { data: insertedPodcast, error: insertError } = await supabase

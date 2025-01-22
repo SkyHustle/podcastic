@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { z } from 'zod'
-import DOMPurify from 'isomorphic-dompurify'
 import chalk from 'chalk'
 import {
   supabase,
@@ -9,37 +7,7 @@ import {
   type PodcastInsert,
   type TrendingPodcastInsert,
 } from '@/lib/supabase'
-
-// Configure DOMPurify to only allow basic formatting tags
-const sanitizeHtml = (html: string) => {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'a'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-  })
-}
-
-const PodcastIndexSchema = z.object({
-  status: z.literal('true').or(z.literal(true)),
-  feeds: z.array(
-    z.object({
-      id: z.number(),
-      url: z.string().url(),
-      title: z.string(),
-      description: z.string(),
-      author: z.string(),
-      image: z.string().url(),
-      artwork: z.string().url(),
-      newestItemPublishTime: z.number(),
-      itunesId: z.number().nullable(),
-      trendScore: z.number(),
-      language: z.string(),
-      categories: z.record(z.string(), z.string()),
-    }),
-  ),
-  count: z.number(),
-  description: z.string(),
-  status_code: z.number().optional(),
-})
+import { sanitizeHtml, PodcastIndexSchema } from '@/lib/podcast-index'
 
 export async function GET() {
   try {
@@ -75,9 +43,14 @@ export async function GET() {
     )
 
     const data = await response.json()
+    // console.log('Raw API Response:', JSON.stringify(data, null, 2))
     const validated = PodcastIndexSchema.safeParse(data)
 
     if (!validated.success) {
+      console.error(
+        'Validation Errors:',
+        JSON.stringify(validated.error.format(), null, 2),
+      )
       return NextResponse.json(
         { error: validated.error.errors },
         { status: 400 },
@@ -120,7 +93,7 @@ export async function GET() {
     const trendingToInsert: TrendingPodcastInsert[] = insertedPodcasts.map(
       (podcast: Podcast, index: number) => ({
         podcast_id: podcast.id,
-        trend_score: validated.data.feeds[index].trendScore,
+        trend_score: validated.data.feeds[index].trendScore ?? 0,
         trending_at: new Date().toISOString(),
       }),
     )
