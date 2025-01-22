@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { z } from 'zod'
 import DOMPurify from 'isomorphic-dompurify'
+import chalk from 'chalk'
 import {
   supabase,
   type Podcast,
@@ -136,6 +137,17 @@ export async function GET() {
         { status: 500 },
       )
     }
+
+    // Log the fetched podcasts
+    console.log('\n=== Trending Podcasts Fetched ===')
+    validated.data.feeds.forEach((feed, index) => {
+      console.log(
+        chalk.green(`\n${index + 1}. Title: ${feed.title}
+   Author: ${feed.author}
+   Categories: ${Object.values(feed.categories).join(', ')}`),
+      )
+    })
+    console.log('\n=============================\n')
 
     return NextResponse.json(validated.data)
   } catch (error) {
