@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     const { data: existingPodcast } = await supabase
       .from('podcasts')
       .select('*')
-      .eq('podcast_guid', feed.id.toString())
+      .eq('podcast_guid', feed.podcastGuid)
       .single()
 
     if (existingPodcast) {
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
 
     // If not exists, insert the new podcast
     const podcastToInsert: PodcastInsert = {
-      podcast_guid: feed.id.toString(),
+      podcast_guid: feed.podcastGuid,
       url: feed.url,
       title: feed.title,
       description: sanitizeHtml(feed.description),

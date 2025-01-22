@@ -29,6 +29,7 @@ export const PodcastIndexSchema = z.object({
       newestItemPublishTime: z.number().optional(),
       trendScore: z.number().optional(),
       episodeCount: z.number().optional(),
+      podcastGuid: z.string(),
     }),
   ),
   count: z.number(),

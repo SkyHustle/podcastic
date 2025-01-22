@@ -60,7 +60,7 @@ export async function GET() {
     // Transform and store the podcasts
     const podcastsToInsert: PodcastInsert[] = validated.data.feeds.map(
       (feed) => ({
-        podcast_guid: feed.id.toString(),
+        podcast_guid: feed.podcastGuid,
         url: feed.url,
         title: feed.title,
         description: sanitizeHtml(feed.description),
