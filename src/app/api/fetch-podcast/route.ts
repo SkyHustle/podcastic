@@ -70,7 +70,10 @@ export async function GET(request: Request) {
       .single()
 
     if (existingPodcast) {
-      return NextResponse.json({ podcast: existingPodcast })
+      return NextResponse.json({
+        podcast: existingPodcast,
+        source: 'database',
+      })
     }
 
     // If not exists, insert the new podcast
@@ -113,7 +116,10 @@ Categories: ${Object.values(feed.categories).join(', ')}`),
     )
     console.log('=====================\n')
 
-    return NextResponse.json({ podcast: insertedPodcast })
+    return NextResponse.json({
+      podcast: insertedPodcast,
+      source: 'api',
+    })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

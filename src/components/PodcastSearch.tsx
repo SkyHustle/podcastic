@@ -7,6 +7,7 @@ export function PodcastSearch() {
   const [title, setTitle] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,6 +21,7 @@ export function PodcastSearch() {
 
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       const response = await fetch(
@@ -31,9 +33,15 @@ export function PodcastSearch() {
         throw new Error(data.error)
       }
 
-      // Clear input and error on success
+      // Clear input on success
       setTitle('')
-      console.log('Search completed successfully!')
+
+      // Show appropriate success message
+      if (data.source === 'database') {
+        setSuccess(`Found "${data.podcast.title}" in database`)
+      } else {
+        setSuccess(`Added "${data.podcast.title}" to database`)
+      }
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'Failed to fetch podcast',
@@ -52,7 +60,8 @@ export function PodcastSearch() {
           value={title}
           onChange={(e) => {
             setTitle(e.target.value)
-            setError(null) // Clear error when user types
+            setError(null)
+            setSuccess(null)
           }}
           placeholder="Search by podcast title"
           className="min-w-[200px] rounded-md border-0 bg-white/5 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
@@ -67,6 +76,11 @@ export function PodcastSearch() {
       {error && (
         <p className="text-sm text-red-500" role="alert">
           {error}
+        </p>
+      )}
+      {success && (
+        <p className="text-sm text-green-600" role="status">
+          {success}
         </p>
       )}
     </div>
