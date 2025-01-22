@@ -5,38 +5,70 @@ import { Button } from './Button'
 
 export function PodcastSearch() {
   const [title, setTitle] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedTitle = title.trim()
+
+    // Validate minimum length
+    if (trimmedTitle.length < 3) {
+      setError('Please enter at least 3 characters')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `/api/fetch-podcast?title=${encodeURIComponent(trimmedTitle)}`,
+      )
+      const data = await response.json()
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      // Clear input and error on success
+      setTitle('')
+      console.log('Search completed successfully!')
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'Failed to fetch podcast',
+      )
+      console.error('Error:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <form
-      className="flex items-center gap-2"
-      onSubmit={async (e) => {
-        e.preventDefault()
-        if (!title.trim()) return
-
-        try {
-          const response = await fetch(
-            `/api/fetch-podcast?title=${encodeURIComponent(title.trim())}`,
-          )
-          const data = await response.json()
-          if (data.error) {
-            throw new Error(data.error)
-          }
-          console.log('Search completed successfully!')
-        } catch (error) {
-          console.error('Error:', error)
-        }
-      }}
-    >
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Search by podcast title"
-        className="rounded-md border-0 bg-white/5 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600"
-      />
-      <Button type="submit" variant="secondary">
-        Search
-      </Button>
-    </form>
+    <div className="flex flex-col gap-2">
+      <form className="flex items-center gap-2" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value)
+            setError(null) // Clear error when user types
+          }}
+          placeholder="Search by podcast title"
+          className="min-w-[200px] rounded-md border-0 bg-white/5 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
+          disabled={isLoading}
+          minLength={3}
+          required
+        />
+        <Button type="submit" variant="secondary" disabled={isLoading}>
+          {isLoading ? 'Searching...' : 'Search'}
+        </Button>
+      </form>
+      {error && (
+        <p className="text-sm text-red-500" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
