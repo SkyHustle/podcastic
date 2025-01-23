@@ -89,7 +89,6 @@ export async function GET(request: Request) {
 
     const data = await response.json()
     console.log(chalk.blue(`Searched podcast in ${Date.now() - searchStart}ms`))
-    console.log('API Response:', JSON.stringify(data, null, 2))
 
     const validated = PodcastIndexSchema.safeParse(data)
 
@@ -190,77 +189,88 @@ export async function GET(request: Request) {
       source = 'api'
     }
 
-    // // Fetch episodes using feed ID since we're moving away from GUID
-    // const episodesResult = await fetchPodcastEpisodes(
-    //   feed.id,
-    //   apiKey,
-    //   apiSecret,
-    // )
+    // Fetch episodes using feed ID since we're moving away from GUID
+    const episodesResult = await fetchPodcastEpisodes(
+      feed.id,
+      apiKey,
+      apiSecret,
+    )
 
-    // if (!episodesResult.success) {
-    //   console.error(
-    //     chalk.red('Failed to validate episodes:'),
-    //     episodesResult.error,
-    //   )
-    // } else {
-    //   // Insert episodes
-    //   const episodeStart = Date.now()
-    //   const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
-    //     (item) => ({
-    //       episode_guid: item.guid,
-    //       podcast_id: podcast.id,
-    //       title: item.title,
-    //       description: sanitizeHtml(item.description),
-    //       link: item.link ?? null,
-    //       date_published: new Date(item.datePublished * 1000).toISOString(),
-    //       date_crawled: item.dateCrawled
-    //         ? new Date(item.dateCrawled * 1000).toISOString()
-    //         : null,
-    //       enclosure_url: item.enclosureUrl,
-    //       enclosure_type: item.enclosureType,
-    //       enclosure_length: item.enclosureLength ?? null,
-    //       duration: item.duration ?? null,
-    //       image: item.image && item.image !== '' ? item.image : null,
-    //       explicit: item.explicit === 1,
-    //       episode_type: item.episodeType ?? null,
-    //       season: item.season ?? null,
-    //       episode_number: item.episode ?? null,
-    //       chapters_url: item.chaptersUrl ?? null,
-    //       transcript_url: item.transcriptUrl ?? null,
-    //       soundbite: item.soundbite ?? null,
-    //       soundbites: item.soundbites ?? null,
-    //       persons: item.persons ?? null,
-    //       social_interact: item.socialInteract ?? null,
-    //       value: item.value ?? null,
-    //     }),
-    //   )
+    if (!episodesResult.success) {
+      console.error(
+        chalk.red('Failed to validate episodes:'),
+        episodesResult.error,
+      )
+    } else {
+      // Insert episodes
+      const episodeStart = Date.now()
+      const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
+        (item) => ({
+          episode_guid: item.guid,
+          podcast_id: podcast.id,
+          title: item.title,
+          description: sanitizeHtml(item.description),
+          link: item.link ?? null,
+          date_published: new Date(item.datePublished * 1000).toISOString(),
+          date_crawled: item.dateCrawled
+            ? new Date(item.dateCrawled * 1000).toISOString()
+            : null,
+          enclosure_url: item.enclosureUrl,
+          enclosure_type: item.enclosureType,
+          enclosure_length: item.enclosureLength ?? null,
+          duration: item.duration ?? null,
+          image: item.image && item.image !== '' ? item.image : null,
+          explicit: item.explicit === 1,
+          episode_type: item.episodeType ?? null,
+          season: item.season ?? null,
+          episode_number: item.episode ?? null,
+          chapters_url: item.chaptersUrl ?? null,
+          transcript_url: item.transcriptUrl ?? null,
+          soundbite: item.soundbite ?? null,
+          soundbites: item.soundbites ?? null,
+          persons: item.persons ?? null,
+          social_interact: item.socialInteract ?? null,
+          value: item.value ?? null,
+        }),
+      )
 
-    //   const { error: episodesError } = await supabase
-    //     .from('episodes')
-    //     .upsert(episodesToInsert, { onConflict: 'episode_guid' })
+      const { error: episodesError } = await supabase
+        .from('episodes')
+        .upsert(episodesToInsert, { onConflict: 'episode_guid' })
 
-    //   if (episodesError) {
-    //     console.error(chalk.red('Failed to store episodes:'), episodesError)
-    //   } else {
-    //     console.log(
-    //       chalk.blue(
-    //         `Stored ${episodesToInsert.length} episodes in ${Date.now() - episodeStart}ms`,
-    //       ),
-    //     )
-    //   }
+      if (episodesError) {
+        console.error(chalk.red('Failed to store episodes:'), episodesError)
+      } else {
+        console.log(
+          chalk.blue(
+            `Stored ${episodesToInsert.length} episodes in ${Date.now() - episodeStart}ms`,
+          ),
+        )
+      }
 
-    //   // Log the fetched podcast summary
-    //   console.log(chalk.blue('\n=== Podcast Summary ==='))
-    //   console.log(chalk.green(`Title: ${feed.title} by ${feed.author}`))
-    //   console.log(chalk.blue('=====================\n'))
-    // }
+      // Enhanced podcast and episode summary
+      console.log(chalk.blue('\n=== Podcast Summary ==='))
+      console.log(chalk.green(`Title: ${feed.title} by ${feed.author}`))
+      console.log(chalk.green(`Episodes Fetched: ${episodesToInsert.length}`))
+      console.log(chalk.blue('\n=== Recent Episodes ==='))
+      episodesToInsert.slice(0, 5).forEach((episode, index) => {
+        console.log(chalk.green(`${index + 1}. ${episode.title}`))
+        console.log(chalk.gray(`   Published: ${episode.date_published}`))
+        console.log(
+          chalk.gray(
+            `   Duration: ${episode.duration ? Math.floor(episode.duration / 60) + ' minutes' : 'Unknown'}`,
+          ),
+        )
+      })
+      console.log(chalk.blue('=====================\n'))
+    }
 
     console.log(chalk.blue(`Total request time: ${Date.now() - totalStart}ms`))
 
     return NextResponse.json({
       podcast,
       source,
-      // episodeCount: episodesResult.success ? episodesResult.data.count : 0,
+      episodeCount: episodesResult.success ? episodesResult.data.count : 0,
     })
   } catch (error) {
     console.log(chalk.red(`Request failed after ${Date.now() - totalStart}ms`))
