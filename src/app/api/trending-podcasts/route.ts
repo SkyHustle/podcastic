@@ -3,13 +3,11 @@ import crypto from 'crypto'
 import chalk from 'chalk'
 import {
   supabase,
-  type Podcast,
   type PodcastInsert,
   type TrendingPodcastInsert,
 } from '@/lib/supabase'
 import {
   sanitizeHtml,
-  PodcastIndexSchema,
   PodcastEpisodesSchema,
   TrendingPodcastsSchema,
 } from '@/lib/podcast-index'
@@ -20,7 +18,6 @@ async function fetchPodcastEpisodes(
   apiKey: string,
   apiSecret: string,
 ) {
-  const start = Date.now()
   const apiHeaderTime = Math.floor(Date.now() / 1000)
   const hash = crypto
     .createHash('sha1')
@@ -31,7 +28,7 @@ async function fetchPodcastEpisodes(
     'https://api.podcastindex.org/api/1.0/episodes/byfeedid?' +
       new URLSearchParams({
         id: feedId.toString(),
-        max: '5', // Get latest 10 episodes
+        max: '5',
         pretty: 'true',
       }),
     {
@@ -45,8 +42,7 @@ async function fetchPodcastEpisodes(
   )
 
   const data = await response.json()
-  const result = PodcastEpisodesSchema.safeParse(data)
-  return result
+  return PodcastEpisodesSchema.safeParse(data)
 }
 
 async function fetchPodcastDetails(
@@ -90,6 +86,7 @@ export async function GET() {
       throw new Error('Missing API credentials')
     }
 
+    // Fetch trending podcasts
     const trendingStart = Date.now()
     const apiHeaderTime = Math.floor(Date.now() / 1000)
     const hash = crypto
@@ -117,19 +114,14 @@ export async function GET() {
 
     const data = await response.json()
 
-    // Debug log the raw feed data
+    // Log trending podcasts
     console.log(
       chalk.blue(
         `\n=== Trending Podcasts (${Date.now() - trendingStart}ms) ===`,
       ),
     )
     data.feeds?.forEach((feed: any, index: number) => {
-      const count = feed.episodes || feed.episodeCount || 0
-      console.log(
-        chalk.green(
-          `${index + 1}. ${feed.title} by ${feed.author} (${count} episodes)`,
-        ),
-      )
+      console.log(chalk.green(`${index + 1}. ${feed.title} by ${feed.author}`))
     })
     console.log(chalk.blue('=====================\n'))
 
@@ -186,7 +178,7 @@ export async function GET() {
       )
     })
 
-    // Upsert podcasts and get their IDs back
+    // Store podcasts and get their IDs back
     const { data: insertedPodcasts, error: podcastError } = await supabase
       .from('podcasts')
       .upsert(podcastsToInsert, { onConflict: 'feed_id' })
@@ -200,10 +192,10 @@ export async function GET() {
       )
     }
 
-    // Create a map of feed_id to our internal podcast id for quick lookup
+    // Create a map of feed_id to internal podcast id
     const podcastIdMap = new Map(insertedPodcasts.map((p) => [p.feed_id, p.id]))
 
-    // Create/update trending references using our internal IDs
+    // Store trending data
     const trendingStoreStart = Date.now()
     const trendingToInsert: TrendingPodcastInsert[] = validated.data.feeds.map(
       (feed) => {
@@ -237,7 +229,7 @@ export async function GET() {
       )
     }
 
-    // Fetch and store episodes for each podcast in parallel
+    // Fetch and store episodes in parallel
     console.log(chalk.blue('\n=== Fetching Episodes ==='))
     const episodesStart = Date.now()
     const episodePromises = validated.data.feeds.map((feed) =>
@@ -306,6 +298,7 @@ export async function GET() {
       chalk.blue(`Processed all episodes in ${Date.now() - episodesStart}ms`),
     )
 
+    // Performance summary
     console.log(chalk.blue('\n=== Performance Summary ==='))
     console.log(chalk.green(`✓ API Request: ${trendingStart - totalStart}ms`))
     console.log(
