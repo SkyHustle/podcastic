@@ -89,10 +89,15 @@ export async function GET(request: Request) {
 
     const data = await response.json()
     console.log(chalk.blue(`Searched podcast in ${Date.now() - searchStart}ms`))
+    console.log('API Response:', JSON.stringify(data, null, 2))
 
     const validated = PodcastIndexSchema.safeParse(data)
 
     if (!validated.success) {
+      console.error(
+        'Validation errors:',
+        JSON.stringify(validated.error.errors, null, 2),
+      )
       return NextResponse.json(
         { error: validated.error.errors },
         { status: 400 },
@@ -122,19 +127,47 @@ export async function GET(request: Request) {
       // If not exists, insert the new podcast
       const insertStart = Date.now()
       const podcastToInsert: PodcastInsert = {
-        feed_id: feed.id.toString(), // Keep as reference to API
+        feed_id: feed.id.toString(),
+        podcast_guid: feed.podcastGuid,
         url: feed.url,
         title: feed.title,
         description: sanitizeHtml(feed.description),
         author: feed.author,
+        owner_name: feed.ownerName ?? null,
         original_url: feed.originalUrl ?? null,
         link: feed.link ?? null,
         image: feed.image,
         artwork: feed.artwork,
+        last_update_time: feed.lastUpdateTime
+          ? new Date(feed.lastUpdateTime * 1000).toISOString()
+          : null,
+        last_crawl_time: feed.lastCrawlTime
+          ? new Date(feed.lastCrawlTime * 1000).toISOString()
+          : null,
+        last_parse_time: feed.lastParseTime
+          ? new Date(feed.lastParseTime * 1000).toISOString()
+          : null,
+        last_good_http_status_time: feed.lastGoodHttpStatusTime
+          ? new Date(feed.lastGoodHttpStatusTime * 1000).toISOString()
+          : null,
+        last_http_status: feed.lastHttpStatus ?? null,
+        content_type: feed.contentType ?? null,
         itunes_id: feed.itunesId,
+        generator: feed.generator ?? null,
         language: feed.language,
-        categories: feed.categories,
+        explicit: feed.explicit === 1,
+        type: feed.type ?? null,
+        medium: feed.medium ?? null,
+        dead: feed.dead === 1,
         episode_count: feed.episodeCount ?? 0,
+        crawl_errors: feed.crawlErrors ?? 0,
+        parse_errors: feed.parseErrors ?? 0,
+        categories: feed.categories,
+        locked: feed.locked === 1,
+        image_url_hash: feed.imageUrlHash?.toString() ?? null,
+        newest_item_pubdate: feed.newestItemPubdate
+          ? new Date(feed.newestItemPubdate * 1000).toISOString()
+          : null,
       }
 
       const { data: insertedPodcast, error: insertError } = await supabase
@@ -157,70 +190,77 @@ export async function GET(request: Request) {
       source = 'api'
     }
 
-    // Fetch episodes using feed ID since we're moving away from GUID
-    const episodesResult = await fetchPodcastEpisodes(
-      feed.id,
-      apiKey,
-      apiSecret,
-    )
+    // // Fetch episodes using feed ID since we're moving away from GUID
+    // const episodesResult = await fetchPodcastEpisodes(
+    //   feed.id,
+    //   apiKey,
+    //   apiSecret,
+    // )
 
-    if (!episodesResult.success) {
-      console.error(
-        chalk.red('Failed to validate episodes:'),
-        episodesResult.error,
-      )
-    } else {
-      // Insert episodes
-      const episodeStart = Date.now()
-      const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
-        (item) => ({
-          episode_guid: item.guid,
-          feed_id: feed.id.toString(),
-          podcast_id: podcast.id,
-          title: item.title,
-          description: sanitizeHtml(item.description),
-          link: item.link ?? null,
-          date_published: new Date(item.datePublished * 1000).toISOString(),
-          enclosure_url: item.enclosureUrl,
-          enclosure_type: item.enclosureType,
-          enclosure_length: item.enclosureLength ?? null,
-          duration: item.duration ?? null,
-          image: item.image && item.image !== '' ? item.image : null,
-          explicit: item.explicit === 1,
-          episode_type: item.episodeType ?? null,
-          season: item.season ?? null,
-          episode_number: item.episode ?? null,
-          chapters_url: item.chaptersUrl ?? null,
-          transcript_url: item.transcriptUrl ?? null,
-        }),
-      )
+    // if (!episodesResult.success) {
+    //   console.error(
+    //     chalk.red('Failed to validate episodes:'),
+    //     episodesResult.error,
+    //   )
+    // } else {
+    //   // Insert episodes
+    //   const episodeStart = Date.now()
+    //   const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
+    //     (item) => ({
+    //       episode_guid: item.guid,
+    //       podcast_id: podcast.id,
+    //       title: item.title,
+    //       description: sanitizeHtml(item.description),
+    //       link: item.link ?? null,
+    //       date_published: new Date(item.datePublished * 1000).toISOString(),
+    //       date_crawled: item.dateCrawled
+    //         ? new Date(item.dateCrawled * 1000).toISOString()
+    //         : null,
+    //       enclosure_url: item.enclosureUrl,
+    //       enclosure_type: item.enclosureType,
+    //       enclosure_length: item.enclosureLength ?? null,
+    //       duration: item.duration ?? null,
+    //       image: item.image && item.image !== '' ? item.image : null,
+    //       explicit: item.explicit === 1,
+    //       episode_type: item.episodeType ?? null,
+    //       season: item.season ?? null,
+    //       episode_number: item.episode ?? null,
+    //       chapters_url: item.chaptersUrl ?? null,
+    //       transcript_url: item.transcriptUrl ?? null,
+    //       soundbite: item.soundbite ?? null,
+    //       soundbites: item.soundbites ?? null,
+    //       persons: item.persons ?? null,
+    //       social_interact: item.socialInteract ?? null,
+    //       value: item.value ?? null,
+    //     }),
+    //   )
 
-      const { error: episodesError } = await supabase
-        .from('episodes')
-        .upsert(episodesToInsert, { onConflict: 'episode_guid' })
+    //   const { error: episodesError } = await supabase
+    //     .from('episodes')
+    //     .upsert(episodesToInsert, { onConflict: 'episode_guid' })
 
-      if (episodesError) {
-        console.error(chalk.red('Failed to store episodes:'), episodesError)
-      } else {
-        console.log(
-          chalk.blue(
-            `Stored ${episodesToInsert.length} episodes in ${Date.now() - episodeStart}ms`,
-          ),
-        )
-      }
+    //   if (episodesError) {
+    //     console.error(chalk.red('Failed to store episodes:'), episodesError)
+    //   } else {
+    //     console.log(
+    //       chalk.blue(
+    //         `Stored ${episodesToInsert.length} episodes in ${Date.now() - episodeStart}ms`,
+    //       ),
+    //     )
+    //   }
 
-      // Log the fetched podcast summary
-      console.log(chalk.blue('\n=== Podcast Summary ==='))
-      console.log(chalk.green(`Title: ${feed.title} by ${feed.author}`))
-      console.log(chalk.blue('=====================\n'))
-    }
+    //   // Log the fetched podcast summary
+    //   console.log(chalk.blue('\n=== Podcast Summary ==='))
+    //   console.log(chalk.green(`Title: ${feed.title} by ${feed.author}`))
+    //   console.log(chalk.blue('=====================\n'))
+    // }
 
     console.log(chalk.blue(`Total request time: ${Date.now() - totalStart}ms`))
 
     return NextResponse.json({
       podcast,
       source,
-      episodeCount: episodesResult.success ? episodesResult.data.count : 0,
+      // episodeCount: episodesResult.success ? episodesResult.data.count : 0,
     })
   } catch (error) {
     console.log(chalk.red(`Request failed after ${Date.now() - totalStart}ms`))
