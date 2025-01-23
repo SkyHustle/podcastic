@@ -13,38 +13,38 @@ import {
 } from '@/lib/podcast-index'
 import type { EpisodeInsert } from '@/lib/types'
 
-// Commenting out episode fetching function as we're not using it for now
-// async function fetchPodcastEpisodes(
-//   feedId: number,
-//   apiKey: string,
-//   apiSecret: string,
-// ) {
-//   const apiHeaderTime = Math.floor(Date.now() / 1000)
-//   const hash = crypto
-//     .createHash('sha1')
-//     .update(apiKey + apiSecret + apiHeaderTime)
-//     .digest('hex')
+// Uncomment and update episode fetching function
+async function fetchPodcastEpisodes(
+  feedId: number,
+  apiKey: string,
+  apiSecret: string,
+) {
+  const apiHeaderTime = Math.floor(Date.now() / 1000)
+  const hash = crypto
+    .createHash('sha1')
+    .update(apiKey + apiSecret + apiHeaderTime)
+    .digest('hex')
 
-//   const response = await fetch(
-//     'https://api.podcastindex.org/api/1.0/episodes/byfeedid?' +
-//       new URLSearchParams({
-//         id: feedId.toString(),
-//         max: '5',
-//         pretty: 'true',
-//       }),
-//     {
-//       headers: {
-//         'User-Agent': 'PodAI/1.0',
-//         'X-Auth-Date': apiHeaderTime.toString(),
-//         'X-Auth-Key': apiKey,
-//         Authorization: hash,
-//       },
-//     },
-//   )
+  const response = await fetch(
+    'https://api.podcastindex.org/api/1.0/episodes/byfeedid?' +
+      new URLSearchParams({
+        id: feedId.toString(),
+        max: '10', // Get latest 10 episodes
+        pretty: 'true',
+      }),
+    {
+      headers: {
+        'User-Agent': 'PodAI/1.0',
+        'X-Auth-Date': apiHeaderTime.toString(),
+        'X-Auth-Key': apiKey,
+        Authorization: hash,
+      },
+    },
+  )
 
-//   const data = await response.json()
-//   return PodcastEpisodesSchema.safeParse(data)
-// }
+  const data = await response.json()
+  return PodcastEpisodesSchema.safeParse(data)
+}
 
 async function fetchPodcastDetails(
   feedId: number,
@@ -258,81 +258,81 @@ export async function GET() {
       )
     }
 
-    // // Fetch and store episodes in parallel
-    // console.log(chalk.blue('\n=== Fetching Episodes ==='))
-    // const episodesStart = Date.now()
-    // const episodePromises = validated.data.feeds.map((feed) =>
-    //   fetchPodcastEpisodes(feed.id, apiKey, apiSecret),
-    // )
-    // const episodeResults = await Promise.all(episodePromises)
+    // Fetch and store episodes in parallel
+    console.log(chalk.blue('\n=== Fetching Episodes ==='))
+    const episodesStart = Date.now()
+    const episodePromises = podcastDetails.map((feed) =>
+      fetchPodcastEpisodes(feed.id, apiKey, apiSecret),
+    )
+    const episodeResults = await Promise.all(episodePromises)
 
-    // // Process episodes in parallel
-    // const episodeInsertPromises = episodeResults.map(async (result, index) => {
-    //   const feed = validated.data.feeds[index]
-    //   if (!result.success) {
-    //     console.error(
-    //       chalk.red(`❌ Failed to fetch episodes for "${feed.title}"`),
-    //     )
-    //     return
-    //   }
+    // Process episodes in parallel
+    const episodeInsertPromises = episodeResults.map(async (result, index) => {
+      const feed = podcastDetails[index]
+      if (!result.success) {
+        console.error(
+          chalk.red(`❌ Failed to fetch episodes for "${feed.title}"`),
+        )
+        return
+      }
 
-    //   const podcastId = podcastIdMap.get(feed.id.toString())
-    //   if (!podcastId) {
-    //     console.error(chalk.red(`❌ No podcast ID found for "${feed.title}"`))
-    //     return
-    //   }
+      const podcastId = podcastIdMap.get(feed.id.toString())
+      if (!podcastId) {
+        console.error(chalk.red(`❌ No podcast ID found for "${feed.title}"`))
+        return
+      }
 
-    //   const episodesToInsert: EpisodeInsert[] = result.data.items.map(
-    //     (item) => ({
-    //       episode_guid: item.guid,
-    //       podcast_id: podcastId,
-    //       title: item.title,
-    //       description: sanitizeHtml(item.description),
-    //       link: item.link ?? null,
-    //       date_published: new Date(item.datePublished * 1000).toISOString(),
-    //       date_crawled: item.dateCrawled
-    //         ? new Date(item.dateCrawled * 1000).toISOString()
-    //         : null,
-    //       enclosure_url: item.enclosureUrl,
-    //       enclosure_type: item.enclosureType,
-    //       enclosure_length: item.enclosureLength ?? null,
-    //       duration: item.duration ?? null,
-    //       image: item.image && item.image !== '' ? item.image : null,
-    //       explicit: item.explicit === 1,
-    //       episode_type: item.episodeType ?? null,
-    //       season: item.season ?? null,
-    //       episode_number: item.episode ?? null,
-    //       chapters_url: item.chaptersUrl ?? null,
-    //       transcript_url: item.transcriptUrl ?? null,
-    //       soundbite: item.soundbite ?? null,
-    //       soundbites: item.soundbites ?? null,
-    //       persons: item.persons ?? null,
-    //       social_interact: item.socialInteract ?? null,
-    //       value: item.value ?? null,
-    //     }),
-    //   )
+      const episodesToInsert: EpisodeInsert[] = result.data.items.map(
+        (item) => ({
+          episode_guid: item.guid,
+          podcast_id: podcastId,
+          title: item.title,
+          description: sanitizeHtml(item.description),
+          link: item.link ?? null,
+          date_published: new Date(item.datePublished * 1000).toISOString(),
+          date_crawled: item.dateCrawled
+            ? new Date(item.dateCrawled * 1000).toISOString()
+            : null,
+          enclosure_url: item.enclosureUrl,
+          enclosure_type: item.enclosureType,
+          enclosure_length: item.enclosureLength ?? null,
+          duration: item.duration ?? null,
+          image: item.image && item.image !== '' ? item.image : null,
+          explicit: item.explicit === 1,
+          episode_type: item.episodeType ?? null,
+          season: item.season ?? null,
+          episode_number: item.episode ?? null,
+          chapters_url: item.chaptersUrl ?? null,
+          transcript_url: item.transcriptUrl ?? null,
+          soundbite: item.soundbite ?? null,
+          soundbites: item.soundbites ?? null,
+          persons: item.persons ?? null,
+          social_interact: item.socialInteract ?? null,
+          value: item.value ?? null,
+        }),
+      )
 
-    //   const { error: episodesError } = await supabase
-    //     .from('episodes')
-    //     .upsert(episodesToInsert, { onConflict: 'episode_guid' })
+      const { error: episodesError } = await supabase
+        .from('episodes')
+        .upsert(episodesToInsert, { onConflict: 'episode_guid' })
 
-    //   if (episodesError) {
-    //     console.error(
-    //       chalk.red(`❌ Failed to store episodes for "${feed.title}"`),
-    //     )
-    //   } else {
-    //     console.log(
-    //       chalk.green(
-    //         `✓ ${feed.title}: ${episodesToInsert.length}/${episodeCounts[index]} episodes`,
-    //       ),
-    //     )
-    //   }
-    // })
+      if (episodesError) {
+        console.error(
+          chalk.red(`❌ Failed to store episodes for "${feed.title}"`),
+        )
+      } else {
+        console.log(
+          chalk.green(
+            `✓ ${feed.title}: ${episodesToInsert.length}/${feed.episodeCount} episodes`,
+          ),
+        )
+      }
+    })
 
-    // await Promise.all(episodeInsertPromises)
-    // console.log(
-    //   chalk.blue(`Processed all episodes in ${Date.now() - episodesStart}ms`),
-    // )
+    await Promise.all(episodeInsertPromises)
+    console.log(
+      chalk.blue(`Processed all episodes in ${Date.now() - episodesStart}ms`),
+    )
 
     // Performance summary
     console.log(chalk.blue('\n=== Performance Summary ==='))
