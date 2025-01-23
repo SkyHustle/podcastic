@@ -74,7 +74,7 @@ async function fetchPodcastDetails(
   )
 
   const data = await response.json()
-  return data.feed?.episodeCount || 0
+  return data.feed
 }
 
 export async function GET() {
@@ -139,66 +139,69 @@ export async function GET() {
       )
     }
 
-    // Fetch all podcast details in parallel
+    // Create a map of feed IDs to their trend scores
+    const trendScores = new Map(
+      validated.data.feeds.map((feed) => [feed.id, feed.trendScore ?? 0]),
+    )
+
+    // Fetch complete details for each trending podcast
     const detailsStart = Date.now()
-    console.log(chalk.blue('\n=== Fetching Podcast Details ==='))
+    console.log(chalk.blue('\n=== Fetching Complete Podcast Details ==='))
     const detailsPromises = validated.data.feeds.map((feed) =>
       fetchPodcastDetails(feed.id, apiKey, apiSecret),
     )
-    const episodeCounts = await Promise.all(detailsPromises)
+    const podcastDetails = await Promise.all(detailsPromises)
     console.log(
       chalk.blue(`Fetched all details in ${Date.now() - detailsStart}ms`),
     )
 
-    // Transform and store the podcasts
+    // Transform and store the podcasts with complete details
     const podcastStart = Date.now()
-    const podcastsToInsert: PodcastInsert[] = validated.data.feeds.map(
-      (feed, index) => ({
-        feed_id: feed.id.toString(),
-        podcast_guid: feed.podcastGuid ?? null,
-        url: feed.url,
-        title: feed.title,
-        description: sanitizeHtml(feed.description),
-        author: feed.author,
-        owner_name: feed.ownerName ?? null,
-        original_url: feed.originalUrl ?? null,
-        link: feed.link ?? null,
-        image: feed.image,
-        artwork: feed.artwork,
-        last_update_time: feed.lastUpdateTime
-          ? new Date(feed.lastUpdateTime * 1000).toISOString()
-          : null,
-        last_crawl_time: feed.lastCrawlTime
-          ? new Date(feed.lastCrawlTime * 1000).toISOString()
-          : null,
-        last_parse_time: feed.lastParseTime
-          ? new Date(feed.lastParseTime * 1000).toISOString()
-          : null,
-        last_good_http_status_time: feed.lastGoodHttpStatusTime
-          ? new Date(feed.lastGoodHttpStatusTime * 1000).toISOString()
-          : null,
-        last_http_status: feed.lastHttpStatus ?? null,
-        content_type: feed.contentType ?? null,
-        itunes_id: feed.itunesId,
-        generator: feed.generator ?? null,
-        language: feed.language,
-        explicit: feed.explicit === 1,
-        type: feed.type === 0 || feed.type === 1 ? feed.type : null,
-        medium: feed.medium ?? null,
-        dead: feed.dead === 1,
-        episode_count: episodeCounts[index],
-        crawl_errors: feed.crawlErrors ?? 0,
-        parse_errors: feed.parseErrors ?? 0,
-        categories: feed.categories,
-        locked: feed.locked === 1,
-        image_url_hash: feed.imageUrlHash?.toString() ?? null,
-        newest_item_pubdate: feed.newestItemPubdate
-          ? new Date(feed.newestItemPubdate * 1000).toISOString()
-          : null,
-      }),
-    )
+    const podcastsToInsert: PodcastInsert[] = podcastDetails.map((feed) => ({
+      feed_id: feed.id.toString(),
+      podcast_guid: feed.podcastGuid ?? null,
+      url: feed.url,
+      title: feed.title,
+      description: sanitizeHtml(feed.description),
+      author: feed.author,
+      owner_name: feed.ownerName ?? null,
+      original_url: feed.originalUrl ?? null,
+      link: feed.link ?? null,
+      image: feed.image,
+      artwork: feed.artwork,
+      last_update_time: feed.lastUpdateTime
+        ? new Date(feed.lastUpdateTime * 1000).toISOString()
+        : null,
+      last_crawl_time: feed.lastCrawlTime
+        ? new Date(feed.lastCrawlTime * 1000).toISOString()
+        : null,
+      last_parse_time: feed.lastParseTime
+        ? new Date(feed.lastParseTime * 1000).toISOString()
+        : null,
+      last_good_http_status_time: feed.lastGoodHttpStatusTime
+        ? new Date(feed.lastGoodHttpStatusTime * 1000).toISOString()
+        : null,
+      last_http_status: feed.lastHttpStatus ?? null,
+      content_type: feed.contentType ?? null,
+      itunes_id: feed.itunesId,
+      generator: feed.generator ?? null,
+      language: feed.language,
+      explicit: feed.explicit === 1,
+      type: feed.type === 0 || feed.type === 1 ? feed.type : null,
+      medium: feed.medium ?? null,
+      dead: feed.dead === 1,
+      episode_count: feed.episodeCount ?? 0,
+      crawl_errors: feed.crawlErrors ?? 0,
+      parse_errors: feed.parseErrors ?? 0,
+      categories: feed.categories,
+      locked: feed.locked === 1,
+      image_url_hash: feed.imageUrlHash?.toString() ?? null,
+      newest_item_pubdate: feed.newestItemPubdate
+        ? new Date(feed.newestItemPubdate * 1000).toISOString()
+        : null,
+    }))
 
-    // Log the episode counts
+    // Log the podcast details
     podcastsToInsert.forEach((podcast) => {
       console.log(
         chalk.green(
@@ -226,18 +229,12 @@ export async function GET() {
 
     // Store trending data
     const trendingStoreStart = Date.now()
-    const trendingToInsert: TrendingPodcastInsert[] = validated.data.feeds.map(
-      (feed) => {
-        const podcastId = podcastIdMap.get(feed.id.toString())
-        if (!podcastId) {
-          throw new Error(`No podcast ID found for feed ${feed.id}`)
-        }
-        return {
-          podcast_id: podcastId,
-          trend_score: feed.trendScore ?? 0,
-          trending_at: new Date().toISOString(),
-        }
-      },
+    const trendingToInsert: TrendingPodcastInsert[] = insertedPodcasts.map(
+      (podcast) => ({
+        podcast_id: podcast.id,
+        trend_score: trendScores.get(parseInt(podcast.feed_id)) ?? 0,
+        trending_at: new Date().toISOString(),
+      }),
     )
 
     // First clear existing trending data
@@ -346,7 +343,10 @@ export async function GET() {
     console.log(chalk.green(`✓ Total Time: ${Date.now() - totalStart}ms`))
     console.log(chalk.blue('=====================\n'))
 
-    return NextResponse.json(validated.data)
+    return NextResponse.json({
+      feeds: podcastDetails,
+      count: podcastDetails.length,
+    })
   } catch (error) {
     console.log(chalk.red(`Request failed after ${Date.now() - totalStart}ms`))
     return NextResponse.json(
