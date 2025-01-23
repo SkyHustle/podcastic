@@ -49,6 +49,37 @@ async function fetchPodcastEpisodes(
   return result
 }
 
+async function fetchPodcastDetails(
+  feedId: number,
+  apiKey: string,
+  apiSecret: string,
+) {
+  const apiHeaderTime = Math.floor(Date.now() / 1000)
+  const hash = crypto
+    .createHash('sha1')
+    .update(apiKey + apiSecret + apiHeaderTime)
+    .digest('hex')
+
+  const response = await fetch(
+    'https://api.podcastindex.org/api/1.0/podcasts/byfeedid?' +
+      new URLSearchParams({
+        id: feedId.toString(),
+        pretty: 'true',
+      }),
+    {
+      headers: {
+        'User-Agent': 'PodAI/1.0',
+        'X-Auth-Date': apiHeaderTime.toString(),
+        'X-Auth-Key': apiKey,
+        Authorization: hash,
+      },
+    },
+  )
+
+  const data = await response.json()
+  return data.feed?.episodeCount || 0
+}
+
 export async function GET() {
   const totalStart = Date.now()
   try {
@@ -85,13 +116,25 @@ export async function GET() {
     )
 
     const data = await response.json()
+
+    // Debug log the raw feed data
+    console.log(
+      chalk.yellow('\nRaw feed data sample:'),
+      JSON.stringify(data.feeds?.[0], null, 2),
+    )
+
     console.log(
       chalk.blue(
         `\n=== Trending Podcasts (${Date.now() - trendingStart}ms) ===`,
       ),
     )
     data.feeds?.forEach((feed: any, index: number) => {
-      console.log(chalk.green(`${index + 1}. ${feed.title} by ${feed.author}`))
+      const count = feed.episodes || feed.episodeCount || 0
+      console.log(
+        chalk.green(
+          `${index + 1}. ${feed.title} by ${feed.author} (${count} episodes)`,
+        ),
+      )
     })
     console.log(chalk.blue('=====================\n'))
 
@@ -110,9 +153,17 @@ export async function GET() {
 
     // Transform and store the podcasts
     const podcastStart = Date.now()
-    const podcastsToInsert: PodcastInsert[] = validated.data.feeds.map(
-      (feed) => ({
-        feed_id: feed.id.toString(), // Keep feed_id as reference to API
+    console.log(chalk.blue('\n=== Fetching Podcast Details ==='))
+    const podcastsToInsert: PodcastInsert[] = []
+
+    for (const feed of validated.data.feeds) {
+      const episodeCount = await fetchPodcastDetails(feed.id, apiKey, apiSecret)
+      console.log(
+        chalk.green(`✓ ${feed.title}: ${episodeCount} total episodes`),
+      )
+
+      podcastsToInsert.push({
+        feed_id: feed.id.toString(),
         url: feed.url,
         title: feed.title,
         description: sanitizeHtml(feed.description),
@@ -124,9 +175,9 @@ export async function GET() {
         itunes_id: feed.itunesId,
         language: feed.language,
         categories: feed.categories,
-        episode_count: feed.episodeCount || 0, // Use API's total episode count
-      }),
-    )
+        episode_count: episodeCount,
+      })
+    }
 
     // Upsert podcasts and get their IDs back
     const { data: insertedPodcasts, error: podcastError } = await supabase

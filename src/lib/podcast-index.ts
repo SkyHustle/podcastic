@@ -26,6 +26,7 @@ const BasePodcastFeedSchema = z.object({
   newestItemPublishTime: z.number().optional(),
   trendScore: z.number().optional(),
   episodeCount: z.number().optional(),
+  episodes: z.number().optional(),
 })
 
 // Schema for podcast search API responses
