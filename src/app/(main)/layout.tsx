@@ -40,7 +40,6 @@ export default function MainLayout({
         </div>
         <div className="relative z-10 mx-auto px-4 pb-4 pt-10 sm:px-6 md:max-w-2xl md:px-4 lg:min-h-full lg:flex-auto lg:border-x lg:border-slate-200 lg:px-8 lg:py-12 xl:px-12">
           <RandomPodcast />
-          <AboutSection className="mt-12 hidden lg:block" />
           <section className="mt-10 lg:mt-12">
             <div className="h-px bg-gradient-to-r from-slate-200/0 via-slate-200 to-slate-200/0 lg:hidden" />
             <ul
