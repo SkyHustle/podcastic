@@ -10,7 +10,7 @@ import {
 import type { EpisodeInsert } from '@/lib/types'
 
 async function fetchPodcastEpisodes(
-  podcastGuid: string,
+  feedId: number,
   apiKey: string,
   apiSecret: string,
 ) {
@@ -22,9 +22,9 @@ async function fetchPodcastEpisodes(
     .digest('hex')
 
   const response = await fetch(
-    'https://api.podcastindex.org/api/1.0/episodes/bypodcastguid?' +
+    'https://api.podcastindex.org/api/1.0/episodes/byfeedid?' +
       new URLSearchParams({
-        guid: podcastGuid,
+        id: feedId.toString(),
         max: '10', // Get latest 10 episodes
         pretty: 'true',
       }),
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
     const { data: existingPodcast } = await supabase
       .from('podcasts')
       .select('*')
-      .eq('podcast_guid', feed.podcastGuid)
+      .eq('feed_id', feed.id.toString())
       .single()
     console.log(chalk.blue(`Database check in ${Date.now() - dbStart}ms`))
 
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
       // If not exists, insert the new podcast
       const insertStart = Date.now()
       const podcastToInsert: PodcastInsert = {
-        podcast_guid: feed.podcastGuid,
+        feed_id: feed.id.toString(), // Keep as reference to API
         url: feed.url,
         title: feed.title,
         description: sanitizeHtml(feed.description),
@@ -157,22 +157,26 @@ export async function GET(request: Request) {
       source = 'api'
     }
 
-    // Fetch episodes
+    // Fetch episodes using feed ID since we're moving away from GUID
     const episodesResult = await fetchPodcastEpisodes(
-      feed.podcastGuid,
+      feed.id,
       apiKey,
       apiSecret,
     )
 
     if (!episodesResult.success) {
-      console.error('Failed to validate episodes:', episodesResult.error)
+      console.error(
+        chalk.red('Failed to validate episodes:'),
+        episodesResult.error,
+      )
     } else {
       // Insert episodes
       const episodeStart = Date.now()
       const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
         (item) => ({
           episode_guid: item.guid,
-          podcast_guid: feed.podcastGuid,
+          feed_id: feed.id.toString(),
+          podcast_id: podcast.id,
           title: item.title,
           description: sanitizeHtml(item.description),
           link: item.link ?? null,
@@ -181,7 +185,7 @@ export async function GET(request: Request) {
           enclosure_type: item.enclosureType,
           enclosure_length: item.enclosureLength ?? null,
           duration: item.duration ?? null,
-          image: item.image ?? null,
+          image: item.image && item.image !== '' ? item.image : null,
           explicit: item.explicit === 1,
           episode_type: item.episodeType ?? null,
           season: item.season ?? null,
@@ -196,31 +200,19 @@ export async function GET(request: Request) {
         .upsert(episodesToInsert, { onConflict: 'episode_guid' })
 
       if (episodesError) {
-        console.error('Failed to store episodes:', episodesError)
-      }
-      console.log(
-        chalk.blue(`Stored episodes in ${Date.now() - episodeStart}ms`),
-      )
-
-      // Log the fetched podcast and episodes
-      console.log('\n=== Podcast Fetched ===')
-      console.log(
-        chalk.green(`
-Title: ${feed.title}
-Author: ${feed.author}
-Categories: ${Object.values(feed.categories).join(', ')}`),
-      )
-
-      console.log('\n=== Latest Episodes ===')
-      episodesResult.data.items.forEach((episode, index) => {
+        console.error(chalk.red('Failed to store episodes:'), episodesError)
+      } else {
         console.log(
-          chalk.green(`
-${index + 1}. ${episode.title}
-   Published: ${episode.datePublishedPretty}
-   Transcript: ${episode.transcriptUrl || 'None'}`),
+          chalk.blue(
+            `Stored ${episodesToInsert.length} episodes in ${Date.now() - episodeStart}ms`,
+          ),
         )
-      })
-      console.log('\n=====================\n')
+      }
+
+      // Log the fetched podcast summary
+      console.log(chalk.blue('\n=== Podcast Summary ==='))
+      console.log(chalk.green(`Title: ${feed.title} by ${feed.author}`))
+      console.log(chalk.blue('=====================\n'))
     }
 
     console.log(chalk.blue(`Total request time: ${Date.now() - totalStart}ms`))

@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const PodcastSchema = z.object({
   id: z.number(),
   created_at: z.string(),
-  podcast_guid: z.string(),
+  feed_id: z.string(),
   title: z.string(),
   url: z.string().url(),
   original_url: z.string().nullable(),
@@ -23,7 +23,8 @@ export const EpisodeSchema = z.object({
   id: z.number(),
   created_at: z.string(),
   episode_guid: z.string(),
-  podcast_guid: z.string(),
+  feed_id: z.string(),
+  podcast_id: z.number(),
   title: z.string(),
   description: z.string(),
   link: z.string().nullable(),

@@ -9,29 +9,42 @@ export const sanitizeHtml = (html: string) => {
   })
 }
 
-// Schema for podcast index API responses
+// Base podcast feed schema
+const BasePodcastFeedSchema = z.object({
+  id: z.number(),
+  url: z.string().url(),
+  title: z.string(),
+  description: z.string(),
+  author: z.string(),
+  image: z.string().url(),
+  artwork: z.string().url(),
+  link: z.string().url().nullable().optional(),
+  originalUrl: z.string().url().nullable().optional(),
+  itunesId: z.number().nullable(),
+  language: z.string(),
+  categories: z.record(z.string(), z.string()),
+  newestItemPublishTime: z.number().optional(),
+  trendScore: z.number().optional(),
+  episodeCount: z.number().optional(),
+})
+
+// Schema for podcast search API responses
 export const PodcastIndexSchema = z.object({
   status: z.literal('true').or(z.literal(true)),
   feeds: z.array(
-    z.object({
-      id: z.number(),
-      url: z.string().url(),
-      title: z.string(),
-      description: z.string(),
-      author: z.string(),
-      image: z.string().url(),
-      artwork: z.string().url(),
-      link: z.string().url().nullable().optional(),
-      originalUrl: z.string().url().nullable().optional(),
-      itunesId: z.number().nullable(),
-      language: z.string(),
-      categories: z.record(z.string(), z.string()),
-      newestItemPublishTime: z.number().optional(),
-      trendScore: z.number().optional(),
-      episodeCount: z.number().optional(),
+    BasePodcastFeedSchema.extend({
       podcastGuid: z.string(),
     }),
   ),
+  count: z.number(),
+  description: z.string(),
+  status_code: z.number().optional(),
+})
+
+// Schema for trending podcasts API response
+export const TrendingPodcastsSchema = z.object({
+  status: z.literal('true').or(z.literal(true)),
+  feeds: z.array(BasePodcastFeedSchema),
   count: z.number(),
   description: z.string(),
   status_code: z.number().optional(),
@@ -57,7 +70,7 @@ export const PodcastEpisodesSchema = z.object({
       episode: z.number().nullable().optional(),
       episodeType: z.string().nullable().optional(),
       season: z.number().nullable().optional(),
-      image: z.string().url().nullable().optional(),
+      image: z.string().url().nullable().optional().or(z.literal('')),
       feedItunesId: z.number().nullable().optional(),
       feedImage: z.string().url().nullable().optional(),
       feedId: z.number(),

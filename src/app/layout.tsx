@@ -4,12 +4,10 @@ import '@/styles/tailwind.css'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s - Their Side',
-    default:
-      'Their Side - Conversations with the most tragically misunderstood people of our time',
+    template: '%s - ',
+    default: 'Pod Ai - Talk to your podcasts',
   },
-  description:
-    'Conversations with the most tragically misunderstood people of our time.',
+  description: 'Podcasting app you could chat with.',
 }
 
 export default function RootLayout({
