@@ -44,6 +44,37 @@ async function fetchPodcastEpisodes(
   return result
 }
 
+async function fetchPodcastDetails(
+  feedId: number,
+  apiKey: string,
+  apiSecret: string,
+) {
+  const apiHeaderTime = Math.floor(Date.now() / 1000)
+  const hash = crypto
+    .createHash('sha1')
+    .update(apiKey + apiSecret + apiHeaderTime)
+    .digest('hex')
+
+  const response = await fetch(
+    'https://api.podcastindex.org/api/1.0/podcasts/byfeedid?' +
+      new URLSearchParams({
+        id: feedId.toString(),
+        pretty: 'true',
+      }),
+    {
+      headers: {
+        'User-Agent': 'PodAI/1.0',
+        'X-Auth-Date': apiHeaderTime.toString(),
+        'X-Auth-Key': apiKey,
+        Authorization: hash,
+      },
+    },
+  )
+
+  const data = await response.json()
+  return data.feed
+}
+
 export async function GET(request: Request) {
   const totalStart = Date.now()
   try {
@@ -108,7 +139,13 @@ export async function GET(request: Request) {
     }
 
     // Take the first result as it's most likely the exact match
-    const feed = validated.data.feeds[0]
+    const searchResult = validated.data.feeds[0]
+
+    // Fetch complete podcast details
+    console.log(chalk.blue('\n=== Fetching Complete Podcast Details ==='))
+    const detailsStart = Date.now()
+    const feed = await fetchPodcastDetails(searchResult.id, apiKey, apiSecret)
+    console.log(chalk.blue(`Fetched details in ${Date.now() - detailsStart}ms`))
 
     // Check if podcast already exists in our database
     const dbStart = Date.now()
@@ -123,11 +160,11 @@ export async function GET(request: Request) {
     let source = 'database'
 
     if (!existingPodcast) {
-      // If not exists, insert the new podcast
+      // If not exists, insert the new podcast with complete details
       const insertStart = Date.now()
       const podcastToInsert: PodcastInsert = {
         feed_id: feed.id.toString(),
-        podcast_guid: feed.podcastGuid,
+        podcast_guid: feed.podcastGuid ?? null,
         url: feed.url,
         title: feed.title,
         description: sanitizeHtml(feed.description),
@@ -155,7 +192,7 @@ export async function GET(request: Request) {
         generator: feed.generator ?? null,
         language: feed.language,
         explicit: feed.explicit === 1,
-        type: feed.type ?? null,
+        type: feed.type === 0 || feed.type === 1 ? feed.type : null,
         medium: feed.medium ?? null,
         dead: feed.dead === 1,
         episode_count: feed.episodeCount ?? 0,
@@ -189,7 +226,7 @@ export async function GET(request: Request) {
       source = 'api'
     }
 
-    // Fetch episodes using feed ID since we're moving away from GUID
+    // Fetch episodes using feed ID
     const episodesResult = await fetchPodcastEpisodes(
       feed.id,
       apiKey,
