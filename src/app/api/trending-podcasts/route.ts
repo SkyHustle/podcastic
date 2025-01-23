@@ -119,11 +119,6 @@ export async function GET() {
 
     // Debug log the raw feed data
     console.log(
-      chalk.yellow('\nRaw feed data sample:'),
-      JSON.stringify(data.feeds?.[0], null, 2),
-    )
-
-    console.log(
       chalk.blue(
         `\n=== Trending Podcasts (${Date.now() - trendingStart}ms) ===`,
       ),
@@ -151,18 +146,21 @@ export async function GET() {
       )
     }
 
+    // Fetch all podcast details in parallel
+    const detailsStart = Date.now()
+    console.log(chalk.blue('\n=== Fetching Podcast Details ==='))
+    const detailsPromises = validated.data.feeds.map((feed) =>
+      fetchPodcastDetails(feed.id, apiKey, apiSecret),
+    )
+    const episodeCounts = await Promise.all(detailsPromises)
+    console.log(
+      chalk.blue(`Fetched all details in ${Date.now() - detailsStart}ms`),
+    )
+
     // Transform and store the podcasts
     const podcastStart = Date.now()
-    console.log(chalk.blue('\n=== Fetching Podcast Details ==='))
-    const podcastsToInsert: PodcastInsert[] = []
-
-    for (const feed of validated.data.feeds) {
-      const episodeCount = await fetchPodcastDetails(feed.id, apiKey, apiSecret)
-      console.log(
-        chalk.green(`✓ ${feed.title}: ${episodeCount} total episodes`),
-      )
-
-      podcastsToInsert.push({
+    const podcastsToInsert: PodcastInsert[] = validated.data.feeds.map(
+      (feed, index) => ({
         feed_id: feed.id.toString(),
         url: feed.url,
         title: feed.title,
@@ -175,15 +173,24 @@ export async function GET() {
         itunes_id: feed.itunesId,
         language: feed.language,
         categories: feed.categories,
-        episode_count: episodeCount,
-      })
-    }
+        episode_count: episodeCounts[index],
+      }),
+    )
+
+    // Log the episode counts
+    podcastsToInsert.forEach((podcast) => {
+      console.log(
+        chalk.green(
+          `✓ ${podcast.title}: ${podcast.episode_count} total episodes`,
+        ),
+      )
+    })
 
     // Upsert podcasts and get their IDs back
     const { data: insertedPodcasts, error: podcastError } = await supabase
       .from('podcasts')
       .upsert(podcastsToInsert, { onConflict: 'feed_id' })
-      .select('*') // Get all fields including id
+      .select('*')
     console.log(chalk.blue(`Stored podcasts in ${Date.now() - podcastStart}ms`))
 
     if (podcastError || !insertedPodcasts) {
@@ -230,30 +237,31 @@ export async function GET() {
       )
     }
 
-    // Fetch and store episodes for each podcast
+    // Fetch and store episodes for each podcast in parallel
     console.log(chalk.blue('\n=== Fetching Episodes ==='))
-    for (const feed of validated.data.feeds) {
-      const episodesResult = await fetchPodcastEpisodes(
-        feed.id,
-        apiKey,
-        apiSecret,
-      )
+    const episodesStart = Date.now()
+    const episodePromises = validated.data.feeds.map((feed) =>
+      fetchPodcastEpisodes(feed.id, apiKey, apiSecret),
+    )
+    const episodeResults = await Promise.all(episodePromises)
 
-      if (!episodesResult.success) {
+    // Process episodes in parallel
+    const episodeInsertPromises = episodeResults.map(async (result, index) => {
+      const feed = validated.data.feeds[index]
+      if (!result.success) {
         console.error(
           chalk.red(`❌ Failed to fetch episodes for "${feed.title}"`),
         )
-        continue
+        return
       }
 
       const podcastId = podcastIdMap.get(feed.id.toString())
       if (!podcastId) {
         console.error(chalk.red(`❌ No podcast ID found for "${feed.title}"`))
-        continue
+        return
       }
 
-      const episodeStart = Date.now()
-      const episodesToInsert: EpisodeInsert[] = episodesResult.data.items.map(
+      const episodesToInsert: EpisodeInsert[] = result.data.items.map(
         (item) => ({
           episode_guid: item.guid,
           feed_id: feed.id.toString(),
@@ -287,11 +295,16 @@ export async function GET() {
       } else {
         console.log(
           chalk.green(
-            `✓ ${feed.title}: ${episodesToInsert.length}/${feed.episodeCount || 0} episodes (${Date.now() - episodeStart}ms)`,
+            `✓ ${feed.title}: ${episodesToInsert.length}/${episodeCounts[index]} episodes`,
           ),
         )
       }
-    }
+    })
+
+    await Promise.all(episodeInsertPromises)
+    console.log(
+      chalk.blue(`Processed all episodes in ${Date.now() - episodesStart}ms`),
+    )
 
     console.log(chalk.blue('\n=== Performance Summary ==='))
     console.log(chalk.green(`✓ API Request: ${trendingStart - totalStart}ms`))
