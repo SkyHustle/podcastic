@@ -124,7 +124,7 @@ export async function GET() {
         itunes_id: feed.itunesId,
         language: feed.language,
         categories: feed.categories,
-        episode_count: feed.episodeCount ?? 0,
+        episode_count: feed.episodeCount || 0, // Use API's total episode count
       }),
     )
 
@@ -236,7 +236,7 @@ export async function GET() {
       } else {
         console.log(
           chalk.green(
-            `✓ ${feed.title}: ${episodesToInsert.length} episodes (${Date.now() - episodeStart}ms)`,
+            `✓ ${feed.title}: ${episodesToInsert.length}/${feed.episodeCount || 0} episodes (${Date.now() - episodeStart}ms)`,
           ),
         )
       }
