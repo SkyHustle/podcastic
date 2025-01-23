@@ -8,6 +8,7 @@ export function PodcastSearch() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [status, setStatus] = useState<string>('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,25 +23,83 @@ export function PodcastSearch() {
     setIsLoading(true)
     setError(null)
     setSuccess(null)
+    setStatus('Searching for podcast...')
 
     try {
-      const response = await fetch(
-        `/api/fetch-podcast?title=${encodeURIComponent(trimmedTitle)}`,
+      // Step 1: Search by title
+      const searchResponse = await fetch(
+        `/api/podcast-index/search-by-title?${new URLSearchParams({
+          title: trimmedTitle,
+        })}`,
       )
-      const data = await response.json()
+      const searchData = await searchResponse.json()
 
-      if (data.error) {
-        throw new Error(data.error)
+      if (searchData.error) {
+        throw new Error(searchData.error)
+      }
+
+      if (!searchData.feeds?.[0]) {
+        throw new Error('No podcasts found')
+      }
+
+      const feedId = searchData.feeds[0].id.toString()
+      setStatus('Found podcast, fetching details...')
+
+      // Step 2: Get complete podcast details
+      const detailsResponse = await fetch(
+        `/api/podcast-index/by-feed-id?${new URLSearchParams({
+          feedId,
+        })}`,
+      )
+      const podcastDetails = await detailsResponse.json()
+
+      if (podcastDetails.error) {
+        throw new Error(podcastDetails.error)
+      }
+
+      setStatus('Fetching latest episodes...')
+
+      // Step 3: Get latest episodes
+      const episodesResponse = await fetch(
+        `/api/podcast-index/episodes?${new URLSearchParams({
+          feedId,
+        })}`,
+      )
+      const episodesData = await episodesResponse.json()
+
+      if (episodesData.error) {
+        throw new Error(episodesData.error)
+      }
+
+      setStatus('Saving to database...')
+
+      // Step 4: Save everything to database
+      const saveResponse = await fetch('/api/supabase/add-podcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          podcast: podcastDetails,
+          episodes: episodesData.items,
+        }),
+      })
+
+      const saveData = await saveResponse.json()
+
+      if (saveData.error) {
+        throw new Error(saveData.error)
       }
 
       // Clear input on success
       setTitle('')
+      setStatus('')
 
       // Show appropriate success message
-      if (data.source === 'database') {
-        setSuccess(`Found "${data.podcast.title}" in database`)
+      if (saveData.source === 'database') {
+        setSuccess(`Found "${saveData.podcast.title}" in database`)
       } else {
-        setSuccess(`Added "${data.podcast.title}" to database`)
+        setSuccess(`Added "${saveData.podcast.title}" to database`)
       }
     } catch (error) {
       setError(
@@ -49,6 +108,7 @@ export function PodcastSearch() {
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
+      setStatus('')
     }
   }
 
@@ -73,6 +133,11 @@ export function PodcastSearch() {
           {isLoading ? 'Searching...' : 'Search'}
         </Button>
       </form>
+      {status && (
+        <p className="text-sm text-slate-400" role="status">
+          {status}
+        </p>
+      )}
       {error && (
         <p className="text-sm text-red-500" role="alert">
           {error}
