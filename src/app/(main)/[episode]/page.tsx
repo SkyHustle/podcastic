@@ -6,17 +6,42 @@ import { EpisodePlayButton } from '@/components/EpisodePlayButton'
 import { FormattedDate } from '@/components/FormattedDate'
 import { PauseIcon } from '@/components/PauseIcon'
 import { PlayIcon } from '@/components/PlayIcon'
-import { getAllEpisodes } from '@/lib/episodes'
+import { supabase } from '@/lib/supabase'
 
-const getEpisode = cache(async (id: string) => {
-  let allEpisodes = await getAllEpisodes()
-  let episode = allEpisodes.find((episode) => episode.id.toString() === id)
+interface Episode {
+  id: number
+  title: string
+  published: Date
+  description: string
+  content: string
+  audio: {
+    src: string
+    type: string
+  }
+}
 
-  if (!episode) {
+const getEpisode = cache(async (id: string): Promise<Episode> => {
+  const { data: episode, error } = await supabase
+    .from('episodes')
+    .select('*')
+    .eq('id', parseInt(id))
+    .single()
+
+  if (error || !episode) {
     notFound()
   }
 
-  return episode
+  return {
+    id: episode.id,
+    title: episode.title,
+    published: new Date(episode.date_published),
+    description: episode.description,
+    content: episode.description, // Using description as content since we don't have separate content
+    audio: {
+      src: episode.enclosure_url,
+      type: episode.enclosure_type,
+    },
+  }
 })
 
 export async function generateMetadata({
@@ -37,7 +62,7 @@ export default async function Episode({
   params: { episode: string }
 }) {
   let episode = await getEpisode(params.episode)
-  let date = new Date(episode.published)
+  let date = episode.published
 
   return (
     <article className="py-16 lg:py-36">

@@ -4,7 +4,18 @@ import { Container } from '@/components/Container'
 import { EpisodePlayButton } from '@/components/EpisodePlayButton'
 import { FormattedDate } from '@/components/FormattedDate'
 import { supabase } from '@/lib/supabase'
-import { type Episode } from '@/lib/episodes'
+
+interface Episode {
+  id: number
+  title: string
+  published: Date
+  description: string
+  content: string
+  audio: {
+    src: string
+    type: string
+  }
+}
 
 async function getCurrentPodcastEpisodes(): Promise<Episode[]> {
   const { data: podcast } = await supabase
