@@ -3,17 +3,17 @@
 import { Button } from '@/components/Button'
 import { ButtonProps } from '@/components/Button'
 
-type PodcastIndexButtonProps = {
+type TrendingPodcastsButtonProps = {
   endpoint: string
   label: string
   variant?: ButtonProps['variant']
 }
 
-export function PodcastIndexButton({
+export function TrendingPodcastsButton({
   endpoint,
   label,
   variant = 'text',
-}: PodcastIndexButtonProps) {
+}: TrendingPodcastsButtonProps) {
   return (
     <Button
       variant={variant}

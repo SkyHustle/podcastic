@@ -8,7 +8,7 @@ import { AudioPlayer } from '@/components/player/AudioPlayer'
 import { TinyWaveFormIcon } from '@/components/TinyWaveFormIcon'
 import { Waveform } from '@/components/Waveform'
 import posterImage from '@/images/poster.png'
-import { PodcastIndexButton } from '@/components/PodcastIndexButton'
+import { TrendingPodcastsButton } from '@/components/TrendingPodcastsButton'
 import { PodcastSearch } from '@/components/PodcastSearch'
 import { RandomPodcast } from '@/components/RandomPodcast'
 import { PersonIcon } from '@/components/PersonIcon'
@@ -47,7 +47,7 @@ export default function MainLayout({
               className="mt-4 flex justify-center gap-10 text-base font-medium leading-7 text-slate-700 sm:gap-8 lg:flex-col lg:gap-4"
             >
               <li className="flex">
-                <PodcastIndexButton
+                <TrendingPodcastsButton
                   endpoint="trending-podcasts"
                   label="Fetch Trending"
                 />
