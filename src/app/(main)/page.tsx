@@ -3,7 +3,31 @@ import Link from 'next/link'
 import { Container } from '@/components/Container'
 import { EpisodePlayButton } from '@/components/EpisodePlayButton'
 import { FormattedDate } from '@/components/FormattedDate'
-import { type Episode, getAllEpisodes } from '@/lib/episodes'
+import { supabase } from '@/lib/supabase'
+import { type Episode } from '@/lib/episodes'
+
+async function getCurrentPodcastEpisodes(): Promise<Episode[]> {
+  const { data: podcast } = await supabase
+    .from('podcasts')
+    .select('*, episodes(*)')
+    .limit(1)
+    .order('created_at', { ascending: false })
+    .single()
+
+  if (!podcast) return []
+
+  return podcast.episodes.map((episode: any) => ({
+    id: episode.id,
+    title: episode.title,
+    published: new Date(episode.date_published),
+    description: episode.description,
+    content: episode.description, // Using description as content since we don't have separate content
+    audio: {
+      src: episode.enclosure_url,
+      type: episode.enclosure_type,
+    },
+  }))
+}
 
 function PauseIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   return (
@@ -26,7 +50,7 @@ function PlayIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
 }
 
 function EpisodeEntry({ episode }: { episode: Episode }) {
-  let date = new Date(episode.published)
+  let date = episode.published
 
   return (
     <article
@@ -86,7 +110,7 @@ function EpisodeEntry({ episode }: { episode: Episode }) {
 }
 
 export default async function Home() {
-  let episodes = await getAllEpisodes()
+  let episodes = await getCurrentPodcastEpisodes()
 
   return (
     <div className="pb-12 pt-16 sm:pb-4 lg:pt-12">

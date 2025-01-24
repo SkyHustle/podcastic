@@ -8,7 +8,7 @@ import { cache } from 'react'
 const getRandomPodcast = cache(async () => {
   const { data: podcast, error } = await supabase
     .from('podcasts')
-    .select()
+    .select('*, episodes(*)')
     .limit(1)
     .order('created_at', { ascending: false })
     .single()
@@ -21,12 +21,46 @@ const getRandomPodcast = cache(async () => {
   return podcast
 })
 
-async function RandomPodcastContent() {
+function extractHosts(podcast: any): string[] {
+  if (!podcast) return []
+
+  // First try to get hosts from episodes' persons data
+  const hosts = new Set<string>()
+  if (podcast.episodes) {
+    podcast.episodes.forEach((episode: any) => {
+      if (episode.persons) {
+        const persons = Array.isArray(episode.persons) ? episode.persons : []
+        persons.forEach((person: any) => {
+          if (person.role?.toLowerCase().includes('host') || !person.role) {
+            hosts.add(person.name)
+          }
+        })
+      }
+    })
+  }
+
+  // If no hosts found in episodes, use podcast author
+  if (hosts.size === 0 && podcast.author) {
+    hosts.add(podcast.author)
+  }
+
+  return Array.from(hosts)
+}
+
+interface RandomPodcastContentProps {
+  renderHosts?: (hosts: string[]) => React.ReactNode
+}
+
+async function RandomPodcastContent({
+  renderHosts,
+}: RandomPodcastContentProps) {
   const podcast = await getRandomPodcast()
 
   if (!podcast) {
     return null
   }
+
+  const hosts = extractHosts(podcast)
 
   return (
     <>
@@ -54,15 +88,16 @@ async function RandomPodcastContent() {
           {podcast.description}
         </p>
       </div>
+      {renderHosts && renderHosts(hosts)}
     </>
   )
 }
 
-export function RandomPodcast() {
+export function RandomPodcast({ renderHosts }: RandomPodcastContentProps) {
   return (
     <Suspense fallback={<div>Loading random podcast...</div>}>
       {/* @ts-ignore */}
-      <RandomPodcastContent />
+      <RandomPodcastContent renderHosts={renderHosts} />
     </Suspense>
   )
 }
