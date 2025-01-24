@@ -7,13 +7,13 @@ import { FormattedDate } from '@/components/FormattedDate'
 import { PauseIcon } from '@/components/PauseIcon'
 import { PlayIcon } from '@/components/PlayIcon'
 import { supabase } from '@/lib/supabase'
+import { stripHtmlAndUrls } from '@/lib/utils'
 
 interface Episode {
   id: number
   title: string
   published: Date
   description: string
-  content: string
   audio: {
     src: string
     type: string
@@ -36,7 +36,6 @@ const getEpisode = cache(async (id: string): Promise<Episode> => {
     title: episode.title,
     published: new Date(episode.date_published),
     description: episode.description,
-    content: episode.description, // Using description as content since we don't have separate content
     audio: {
       src: episode.enclosure_url,
       type: episode.enclosure_type,
@@ -90,13 +89,13 @@ export default async function Episode({
             </div>
           </div>
           <p className="ml-24 mt-3 text-lg font-medium leading-8 text-slate-700">
-            {episode.description}
+            {stripHtmlAndUrls(episode.description)}
           </p>
         </header>
         <hr className="my-12 border-gray-200" />
         <div
           className="prose prose-slate mt-14 [&>h2:nth-of-type(3n)]:before:bg-violet-200 [&>h2:nth-of-type(3n+2)]:before:bg-indigo-200 [&>h2]:mt-12 [&>h2]:flex [&>h2]:items-center [&>h2]:font-mono [&>h2]:text-sm [&>h2]:font-medium [&>h2]:leading-7 [&>h2]:text-slate-900 [&>h2]:before:mr-3 [&>h2]:before:h-3 [&>h2]:before:w-1.5 [&>h2]:before:rounded-r-full [&>h2]:before:bg-cyan-200 [&>ul]:mt-6 [&>ul]:list-['\2013\20'] [&>ul]:pl-5"
-          dangerouslySetInnerHTML={{ __html: episode.content }}
+          dangerouslySetInnerHTML={{ __html: episode.description }}
         />
       </Container>
     </article>

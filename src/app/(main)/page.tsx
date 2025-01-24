@@ -4,6 +4,7 @@ import { Container } from '@/components/Container'
 import { EpisodePlayButton } from '@/components/EpisodePlayButton'
 import { FormattedDate } from '@/components/FormattedDate'
 import { supabase } from '@/lib/supabase'
+import { stripHtmlAndUrls } from '@/lib/utils'
 
 interface Episode {
   id: number
@@ -58,18 +59,6 @@ function PlayIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
       <path d="M8.25 4.567a.5.5 0 0 1 0 .866l-7.5 4.33A.5.5 0 0 1 0 9.33V.67A.5.5 0 0 1 .75.237l7.5 4.33Z" />
     </svg>
   )
-}
-
-function stripHtmlAndUrls(text: string): string {
-  return text
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/(?:https?|ftp|www\.)\S+/gi, '') // Remove URLs including www
-    .replace(
-      /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\b/gi,
-      '',
-    ) // Remove domains
-    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-    .trim()
 }
 
 function EpisodeEntry({ episode }: { episode: Episode }) {
