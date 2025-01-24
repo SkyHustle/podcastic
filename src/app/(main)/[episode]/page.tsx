@@ -79,7 +79,7 @@ export default async function Episode({
               }
             />
             <div className="flex flex-col">
-              <h1 className="mt-2 text-4xl font-bold text-slate-900">
+              <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">
                 {episode.title}
               </h1>
               <FormattedDate
@@ -89,7 +89,7 @@ export default async function Episode({
             </div>
           </div>
           <p
-            className="ml-24 mt-3 text-lg font-medium leading-8 text-slate-700"
+            className="ml-24 mt-3 text-base font-medium leading-7 text-slate-700 sm:text-lg sm:leading-8"
             dangerouslySetInnerHTML={{
               __html: formatDescriptionWithLinks(episode.description),
             }}
