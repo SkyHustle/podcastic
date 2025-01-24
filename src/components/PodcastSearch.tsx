@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from './Button'
 import { useRouter } from 'next/navigation'
 
@@ -10,7 +10,26 @@ export function PodcastSearch() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('')
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
   const router = useRouter()
+
+  // Load search history on component mount
+  useEffect(() => {
+    const history = localStorage.getItem('podcastSearchHistory')
+    if (history) {
+      setSearchHistory(JSON.parse(history))
+    }
+  }, [])
+
+  // Save successful search to history
+  const addToHistory = (query: string) => {
+    const newHistory = [
+      query,
+      ...searchHistory.filter((item) => item !== query),
+    ].slice(0, 5)
+    setSearchHistory(newHistory)
+    localStorage.setItem('podcastSearchHistory', JSON.stringify(newHistory))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,6 +112,9 @@ export function PodcastSearch() {
         throw new Error(saveData.error)
       }
 
+      // Add successful search to history
+      addToHistory(trimmedTitle)
+
       // Clear input on success
       setTitle('')
       setStatus('')
@@ -104,7 +126,8 @@ export function PodcastSearch() {
         setSuccess(`Added "${saveData.podcast.title}" to database`)
       }
 
-      // Refresh the page to show the current podcast
+      // Navigate to show the found/added podcast
+      router.push(`/?podcast=${saveData.podcast.id}`)
       router.refresh()
     } catch (error) {
       setError(
@@ -134,7 +157,13 @@ export function PodcastSearch() {
             disabled={isLoading}
             minLength={3}
             required
+            list="podcast-search-history"
           />
+          <datalist id="podcast-search-history">
+            {searchHistory.map((item, index) => (
+              <option key={index} value={item} />
+            ))}
+          </datalist>
         </div>
         <Button
           type="submit"
