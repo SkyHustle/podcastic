@@ -13,28 +13,6 @@ import { PodcastSearch } from '@/components/PodcastSearch'
 import { RandomPodcast } from '@/components/RandomPodcast'
 import { PersonIcon } from '@/components/PersonIcon'
 
-function HostList({ hosts }: { hosts: string[] }) {
-  if (!hosts.length) return null
-
-  return (
-    <>
-      <span className="font-mono text-slate-500">Hosted by</span>
-      <span className="mt-6 flex gap-6 font-bold text-slate-900">
-        {hosts.map((host, hostIndex) => (
-          <Fragment key={host}>
-            {hostIndex !== 0 && (
-              <span aria-hidden="true" className="text-slate-400">
-                /
-              </span>
-            )}
-            {host}
-          </Fragment>
-        ))}
-      </span>
-    </>
-  )
-}
-
 export default function MainLayout({
   children,
 }: {
@@ -43,11 +21,6 @@ export default function MainLayout({
   return (
     <AudioProvider>
       <header className="bg-slate-50 lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-112 lg:items-start lg:overflow-y-auto xl:w-120">
-        <div className="hidden lg:sticky lg:top-0 lg:flex lg:w-16 lg:flex-none lg:items-center lg:whitespace-nowrap lg:py-12 lg:text-sm lg:leading-7 lg:[writing-mode:vertical-rl]">
-          <RandomPodcast
-            renderHosts={(hosts: string[]) => <HostList hosts={hosts} />}
-          />
-        </div>
         <div className="relative z-10 mx-auto px-4 pb-4 pt-10 sm:px-6 md:max-w-2xl md:px-4 lg:min-h-full lg:flex-auto lg:border-x lg:border-slate-200 lg:px-8 lg:py-12 xl:px-12">
           <RandomPodcast />
           <section className="mt-10 lg:mt-12">
@@ -76,28 +49,7 @@ export default function MainLayout({
       <footer className="border-t border-slate-200 bg-slate-50 py-10 pb-40 sm:py-16 sm:pb-32 lg:hidden">
         <div className="mx-auto px-4 sm:px-6 md:max-w-2xl md:px-4">
           <AboutSection />
-          <RandomPodcast
-            renderHosts={(hosts: string[]) => (
-              <>
-                <h2 className="mt-8 flex items-center font-mono text-sm font-medium leading-7 text-slate-900">
-                  <PersonIcon className="h-3 w-auto fill-slate-300" />
-                  <span className="ml-2.5">Hosted by</span>
-                </h2>
-                <div className="mt-2 flex gap-6 text-sm font-bold leading-7 text-slate-900">
-                  {hosts.map((host, hostIndex) => (
-                    <Fragment key={host}>
-                      {hostIndex !== 0 && (
-                        <span aria-hidden="true" className="text-slate-400">
-                          /
-                        </span>
-                      )}
-                      {host}
-                    </Fragment>
-                  ))}
-                </div>
-              </>
-            )}
-          />
+          <RandomPodcast />
         </div>
       </footer>
       <div className="fixed inset-x-0 bottom-0 z-10 lg:left-112 xl:left-120">
