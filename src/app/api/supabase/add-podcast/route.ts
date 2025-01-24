@@ -16,10 +16,25 @@ export async function POST(request: Request) {
       .single()
 
     if (existingPodcast) {
+      // Update the created_at timestamp to make it the latest podcast
+      const { data: updatedPodcast, error: updateError } = await supabase
+        .from('podcasts')
+        .update({ created_at: new Date().toISOString() })
+        .eq('id', existingPodcast.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: 'Failed to update podcast' },
+          { status: 500 },
+        )
+      }
+
       return NextResponse.json(
         {
           source: 'database',
-          podcast: existingPodcast,
+          podcast: updatedPodcast || existingPodcast,
         },
         { status: 200 },
       )

@@ -2,10 +2,9 @@ import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { cache } from 'react'
 
-// Cache the database call
-const getRandomPodcast = cache(async () => {
+// Fetch the current podcast
+const getCurrentPodcast = async () => {
   const { data: podcast, error } = await supabase
     .from('podcasts')
     .select('*, episodes(*)')
@@ -14,15 +13,15 @@ const getRandomPodcast = cache(async () => {
     .single()
 
   if (error) {
-    console.error('Error fetching random podcast:', error)
+    console.error('Error fetching podcast:', error)
     return null
   }
 
   return podcast
-})
+}
 
-async function RandomPodcastContent() {
-  const podcast = await getRandomPodcast()
+async function CurrentPodcastContent() {
+  const podcast = await getCurrentPodcast()
 
   if (!podcast) {
     return null
@@ -58,11 +57,11 @@ async function RandomPodcastContent() {
   )
 }
 
-export function RandomPodcast() {
+export function CurrentPodcast() {
   return (
-    <Suspense fallback={<div>Loading random podcast...</div>}>
+    <Suspense fallback={<div>Loading podcast...</div>}>
       {/* @ts-ignore */}
-      <RandomPodcastContent />
+      <CurrentPodcastContent />
     </Suspense>
   )
 }

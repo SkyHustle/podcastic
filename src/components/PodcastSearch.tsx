@@ -104,7 +104,7 @@ export function PodcastSearch() {
         setSuccess(`Added "${saveData.podcast.title}" to database`)
       }
 
-      // Refresh the page to show the new podcast
+      // Refresh the page to show the current podcast
       router.refresh()
     } catch (error) {
       setError(
