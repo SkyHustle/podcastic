@@ -21,6 +21,19 @@ export function PodcastSearch() {
     }
   }, [])
 
+  // Clear messages after 3 seconds
+  useEffect(() => {
+    if (status || error || success) {
+      const timer = setTimeout(() => {
+        setStatus('')
+        setError(null)
+        setSuccess(null)
+      }, 3000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [status, error, success])
+
   // Save successful search to history
   const addToHistory = (query: string) => {
     const newHistory = [
