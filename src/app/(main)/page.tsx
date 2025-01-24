@@ -22,23 +22,29 @@ async function getCurrentPodcastEpisodes(): Promise<Episode[]> {
   const { data: podcast } = await supabase
     .from('podcasts')
     .select('*, episodes(*)')
-    .limit(1)
     .order('created_at', { ascending: false })
+    .limit(1)
     .single()
 
   if (!podcast) return []
 
-  return podcast.episodes.map((episode: any) => ({
-    id: episode.id,
-    title: episode.title,
-    published: new Date(episode.date_published),
-    description: episode.description,
-    content: episode.description, // Using description as content since we don't have separate content
-    audio: {
-      src: episode.enclosure_url,
-      type: episode.enclosure_type,
-    },
-  }))
+  return podcast.episodes
+    .sort(
+      (a: any, b: any) =>
+        new Date(b.date_published).getTime() -
+        new Date(a.date_published).getTime(),
+    )
+    .map((episode: any) => ({
+      id: episode.id,
+      title: episode.title,
+      published: new Date(episode.date_published),
+      description: episode.description,
+      content: episode.description, // Using description as content since we don't have separate content
+      audio: {
+        src: episode.enclosure_url,
+        type: episode.enclosure_type,
+      },
+    }))
 }
 
 function PauseIcon(props: React.ComponentPropsWithoutRef<'svg'>) {

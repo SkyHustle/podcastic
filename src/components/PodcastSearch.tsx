@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from './Button'
+import { useRouter } from 'next/navigation'
 
 export function PodcastSearch() {
   const [title, setTitle] = useState('')
@@ -9,6 +10,7 @@ export function PodcastSearch() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('')
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,6 +103,9 @@ export function PodcastSearch() {
       } else {
         setSuccess(`Added "${saveData.podcast.title}" to database`)
       }
+
+      // Refresh the page to show the new podcast
+      router.refresh()
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'Failed to fetch podcast',
