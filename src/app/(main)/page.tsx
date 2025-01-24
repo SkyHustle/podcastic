@@ -79,7 +79,7 @@ function EpisodeEntry({ episode }: { episode: Episode }) {
         <div className="flex flex-col items-start">
           <h2
             id={`episode-${episode.id}-title`}
-            className="mt-2 text-lg font-bold text-slate-900"
+            className="mt-2 text-base font-bold text-slate-900 sm:text-lg"
           >
             <Link href={`/${episode.id}`}>{episode.title}</Link>
           </h2>
@@ -87,7 +87,7 @@ function EpisodeEntry({ episode }: { episode: Episode }) {
             date={date}
             className="order-first font-mono text-sm leading-7 text-slate-500"
           />
-          <p className="mt-1 text-base leading-7 text-slate-700">
+          <p className="mt-1 text-sm leading-6 text-slate-700 sm:text-base sm:leading-7">
             {stripHtmlAndUrls(episode.description)}
           </p>
           <div className="mt-4 flex items-center gap-4">

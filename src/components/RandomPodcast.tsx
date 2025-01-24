@@ -47,10 +47,10 @@ async function RandomPodcastContent() {
         <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-black/10 sm:rounded-xl lg:rounded-2xl" />
       </Link>
       <div className="mt-10 text-center lg:mt-12 lg:text-left">
-        <p className="text-xl font-bold text-slate-900">
+        <p className="text-lg font-bold text-slate-900 sm:text-xl">
           <Link href="/">{podcast.title}</Link>
         </p>
-        <p className="mt-3 text-lg font-medium leading-8 text-slate-700">
+        <p className="mt-3 text-sm font-medium leading-6 text-slate-700 sm:text-base sm:leading-7 md:text-lg md:leading-8">
           {podcast.description}
         </p>
       </div>
