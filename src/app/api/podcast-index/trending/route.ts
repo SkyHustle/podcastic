@@ -44,6 +44,11 @@ export async function GET(request: Request) {
       ),
     )
 
+    data.feeds?.forEach((feed: any, index: number) => {
+      console.log(chalk.green(`${index + 1}. ${feed.title} by ${feed.author}`))
+    })
+    console.log(chalk.blue('=====================\n'))
+
     const validated = TrendingPodcastsSchema.safeParse(data)
 
     if (!validated.success) {

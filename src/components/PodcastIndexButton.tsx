@@ -19,7 +19,7 @@ export function PodcastIndexButton({
       variant={variant}
       onClick={async () => {
         try {
-          const response = await fetch(`/api/${endpoint}`)
+          const response = await fetch(`/api/podcast-index/trending`)
           const data = await response.json()
 
           // Check for errors
