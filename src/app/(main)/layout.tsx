@@ -48,8 +48,7 @@ export default function MainLayout({
       </main>
       <footer className="border-t border-slate-200 bg-slate-50 py-10 pb-40 sm:py-16 sm:pb-32 lg:hidden">
         <div className="mx-auto px-4 sm:px-6 md:max-w-2xl md:px-4">
-          <AboutSection />
-          <RandomPodcast />
+          Mobile Footer
         </div>
       </footer>
       <div className="fixed inset-x-0 bottom-0 z-10 lg:left-112 xl:left-120">

@@ -113,23 +113,30 @@ export function PodcastSearch() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       <form className="flex items-center gap-2" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value)
-            setError(null)
-            setSuccess(null)
-          }}
-          placeholder="Search by podcast title"
-          className="min-w-[200px] rounded-md border-0 bg-white/5 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
+        <div className="min-w-0 flex-1">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setError(null)
+              setSuccess(null)
+            }}
+            placeholder="Search by podcast title"
+            className="w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
+            disabled={isLoading}
+            minLength={3}
+            required
+          />
+        </div>
+        <Button
+          type="submit"
+          variant="secondary"
           disabled={isLoading}
-          minLength={3}
-          required
-        />
-        <Button type="submit" variant="secondary" disabled={isLoading}>
+          className="shrink-0"
+        >
           {isLoading ? 'Searching...' : 'Search'}
         </Button>
       </form>
