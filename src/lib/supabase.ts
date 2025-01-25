@@ -12,4 +12,4 @@ export const supabase = createClient(
   process.env.SUPABASE_API_KEY,
 )
 
-export * from './types'
+export * from './schemas'

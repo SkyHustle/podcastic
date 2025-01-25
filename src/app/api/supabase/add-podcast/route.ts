@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import chalk from 'chalk'
-import { sanitizeHtml } from '@/lib/podcast-index'
-import type { PodcastInsert, EpisodeInsert } from '@/lib/types'
+import { sanitizeHtml } from '@/lib/utils/html'
+import type { PodcastInsert, EpisodeInsert } from '@/lib/schemas'
 
 export async function POST(request: Request) {
   try {

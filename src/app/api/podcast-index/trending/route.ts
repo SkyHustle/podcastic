@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
-import { TrendingPodcastsSchema } from '@/lib/podcast-index'
+import { TrendingPodcastsResponseSchema } from '@/lib/schemas'
 
 export async function GET(request: Request) {
   try {
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     })
     console.log(chalk.blue('=====================\n'))
 
-    const validated = TrendingPodcastsSchema.safeParse(data)
+    const validated = TrendingPodcastsResponseSchema.safeParse(data)
 
     if (!validated.success) {
       console.error(

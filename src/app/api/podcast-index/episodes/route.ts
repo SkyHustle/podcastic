@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
-import { PodcastEpisodesSchema } from '@/lib/podcast-index'
+import { PodcastEpisodesResponseSchema } from '@/lib/schemas'
 
 export async function GET(request: Request) {
   try {
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       chalk.blue(`Fetched episodes in ${Date.now() - episodesStart}ms`),
     )
 
-    const validated = PodcastEpisodesSchema.safeParse(data)
+    const validated = PodcastEpisodesResponseSchema.safeParse(data)
 
     if (!validated.success) {
       console.error(

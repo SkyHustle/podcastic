@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
-import { PodcastIndexSchema } from '@/lib/podcast-index'
+import { PodcastSearchResponseSchema } from '@/lib/schemas'
 
 export async function GET(request: Request) {
   try {
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     const data = await response.json()
     console.log(chalk.blue(`Searched podcast in ${Date.now() - searchStart}ms`))
 
-    const validated = PodcastIndexSchema.safeParse(data)
+    const validated = PodcastSearchResponseSchema.safeParse(data)
 
     if (!validated.success) {
       console.error(
