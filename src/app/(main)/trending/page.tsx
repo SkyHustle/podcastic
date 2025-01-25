@@ -2,44 +2,25 @@
 
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
-
-interface Feed {
-  image: string
-  title: string
-  id: number
-}
+import type { TrendingPodcastsResponse } from '@/lib/schemas/api-schemas'
 
 export default function TrendingPage() {
-  const [feeds, setFeeds] = useState<Feed[]>([])
+  const [feeds, setFeeds] = useState<TrendingPodcastsResponse['feeds']>([])
 
   useEffect(() => {
-    const abortController = new AbortController()
-
     const fetchTrendingPodcasts = async () => {
       try {
-        const response = await fetch('/api/podcast-index/trending', {
-          signal: abortController.signal,
-        })
-        const data = await response.json()
+        const response = await fetch('/api/podcast-index/trending')
+        if (!response.ok) throw new Error('Failed to fetch trending podcasts')
 
-        if (data.error) {
-          throw new Error(data.error)
-        }
-
+        const data = (await response.json()) as TrendingPodcastsResponse
         setFeeds(data.feeds.slice(0, 12))
-      } catch (error: any) {
-        if (error?.name === 'AbortError') {
-          return // Ignore abort errors
-        }
-        console.error('Error fetching trending podcasts:', error)
+      } catch (error) {
+        console.error('Error:', error)
       }
     }
 
     fetchTrendingPodcasts()
-
-    return () => {
-      abortController.abort()
-    }
   }, [])
 
   return (
