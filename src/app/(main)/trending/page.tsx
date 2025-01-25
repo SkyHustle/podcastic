@@ -9,7 +9,7 @@ export default function TrendingPage() {
             Trending Podcasts
           </h2>
           <p className="mt-2 text-lg leading-8 text-gray-600">
-            Discover what's popular right now in the podcast world.
+            Discover what is popular right now in the podcast world.
           </p>
           {/* Add your trending podcasts list component here */}
         </div>
