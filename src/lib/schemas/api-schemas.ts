@@ -41,6 +41,22 @@ export const PodcastFeedSchema = z.object({
   podcastGuid: z.string().optional(),
 })
 
+// Trending podcast from API
+export const TrendingPodcastSchema = z.object({
+  id: z.number(),
+  url: z.string().url(),
+  title: z.string(),
+  description: z.string(),
+  author: z.string(),
+  image: z.string().url(),
+  artwork: z.string().url(),
+  newestItemPublishTime: z.number(),
+  itunesId: z.number(),
+  trendScore: z.number(),
+  language: z.string(),
+  categories: z.record(z.string()), // Adjust based on actual categories structure
+})
+
 // Episode from API
 export const PodcastEpisodeSchema = z.object({
   id: z.number(),
@@ -85,7 +101,7 @@ export const PodcastSearchResponseSchema = z.object({
 
 export const TrendingPodcastsResponseSchema = z.object({
   ...BaseApiResponse,
-  feeds: z.array(PodcastFeedSchema),
+  feeds: z.array(TrendingPodcastSchema),
 })
 
 export const PodcastEpisodesResponseSchema = z.object({

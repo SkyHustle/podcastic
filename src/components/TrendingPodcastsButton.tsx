@@ -36,107 +36,109 @@ export function TrendingPodcastsButton({
               throw new Error(trendingData.error)
             }
 
-            const savedPodcasts = []
+            console.log(trendingData)
 
-            // Process each trending podcast
-            for (const feed of trendingData.feeds) {
-              setStatus(`Processing "${feed.title}"...`)
+            // const savedPodcasts = []
 
-              // Step 2: Get complete podcast details
-              const detailsResponse = await fetch(
-                `/api/podcast-index/by-feed-id?${new URLSearchParams({
-                  feedId: feed.id.toString(),
-                })}`,
-              )
-              const podcastDetails = await detailsResponse.json()
+            // // Process each trending podcast
+            // for (const feed of trendingData.feeds) {
+            //   setStatus(`Processing "${feed.title}"...`)
 
-              if (podcastDetails.error) {
-                console.error(
-                  `Failed to fetch details for "${feed.title}":`,
-                  podcastDetails.error,
-                )
-                continue
-              }
+            //   // Step 2: Get complete podcast details
+            //   const detailsResponse = await fetch(
+            //     `/api/podcast-index/by-feed-id?${new URLSearchParams({
+            //       feedId: feed.id.toString(),
+            //     })}`,
+            //   )
+            //   const podcastDetails = await detailsResponse.json()
 
-              // Step 3: Get latest episodes
-              const episodesResponse = await fetch(
-                `/api/podcast-index/episodes?${new URLSearchParams({
-                  feedId: feed.id.toString(),
-                })}`,
-              )
-              const episodesData = await episodesResponse.json()
+            //   if (podcastDetails.error) {
+            //     console.error(
+            //       `Failed to fetch details for "${feed.title}":`,
+            //       podcastDetails.error,
+            //     )
+            //     continue
+            //   }
 
-              if (episodesData.error) {
-                console.error(
-                  `Failed to fetch episodes for "${feed.title}":`,
-                  episodesData.error,
-                )
-                continue
-              }
+            //   // Step 3: Get latest episodes
+            //   const episodesResponse = await fetch(
+            //     `/api/podcast-index/episodes?${new URLSearchParams({
+            //       feedId: feed.id.toString(),
+            //     })}`,
+            //   )
+            //   const episodesData = await episodesResponse.json()
 
-              if (!episodesData.items?.length) {
-                console.error(`No episodes found for "${feed.title}"`)
-                continue
-              }
+            //   if (episodesData.error) {
+            //     console.error(
+            //       `Failed to fetch episodes for "${feed.title}":`,
+            //       episodesData.error,
+            //     )
+            //     continue
+            //   }
 
-              // Step 4: Save podcast and episodes to database
-              const saveResponse = await fetch('/api/supabase/add-podcast', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  podcast: podcastDetails,
-                  episodes: episodesData.items,
-                }),
-              })
+            //   if (!episodesData.items?.length) {
+            //     console.error(`No episodes found for "${feed.title}"`)
+            //     continue
+            //   }
 
-              const saveData = await saveResponse.json()
+            //   // Step 4: Save podcast and episodes to database
+            //   const saveResponse = await fetch('/api/supabase/add-podcast', {
+            //     method: 'POST',
+            //     headers: {
+            //       'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({
+            //       podcast: podcastDetails,
+            //       episodes: episodesData.items,
+            //     }),
+            //   })
 
-              if (saveData.error) {
-                console.error(`Failed to save "${feed.title}":`, saveData.error)
-                continue
-              }
+            //   const saveData = await saveResponse.json()
 
-              console.log(
-                `${saveData.source === 'database' ? 'Found' : 'Added'} "${feed.title}" with ${episodesData.items.length} episodes`,
-              )
+            //   if (saveData.error) {
+            //     console.error(`Failed to save "${feed.title}":`, saveData.error)
+            //     continue
+            //   }
 
-              // Add to saved podcasts array for trending data
-              savedPodcasts.push({
-                podcast: {
-                  id: saveData.podcast.id,
-                  title: saveData.podcast.title,
-                },
-                trendScore: feed.trendScore,
-              })
-            }
+            //   console.log(
+            //     `${saveData.source === 'database' ? 'Found' : 'Added'} "${feed.title}" with ${episodesData.items.length} episodes`,
+            //   )
 
-            // Step 5: Update trending podcasts table
-            if (savedPodcasts.length > 0) {
-              setStatus('Updating trending podcasts list...')
-              const trendingResponse = await fetch(
-                '/api/supabase/add-trending-podcasts',
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    trendingPodcasts: savedPodcasts,
-                  }),
-                },
-              )
+            //   // Add to saved podcasts array for trending data
+            //   savedPodcasts.push({
+            //     podcast: {
+            //       id: saveData.podcast.id,
+            //       title: saveData.podcast.title,
+            //     },
+            //     trendScore: feed.trendScore,
+            //   })
+            // }
 
-              const trendingResult = await trendingResponse.json()
+            // // Step 5: Update trending podcasts table
+            // if (savedPodcasts.length > 0) {
+            //   setStatus('Updating trending podcasts list...')
+            //   const trendingResponse = await fetch(
+            //     '/api/supabase/add-trending-podcasts',
+            //     {
+            //       method: 'POST',
+            //       headers: {
+            //         'Content-Type': 'application/json',
+            //       },
+            //       body: JSON.stringify({
+            //         trendingPodcasts: savedPodcasts,
+            //       }),
+            //     },
+            //   )
 
-              if (trendingResult.error) {
-                throw new Error(trendingResult.error)
-              }
-            }
+            //   const trendingResult = await trendingResponse.json()
 
-            setStatus('All trending podcasts processed!')
-            setTimeout(() => setStatus(''), 3000) // Clear status after 3 seconds
+            //   if (trendingResult.error) {
+            //     throw new Error(trendingResult.error)
+            //   }
+            // }
+
+            // setStatus('All trending podcasts processed!')
+            // setTimeout(() => setStatus(''), 3000) // Clear status after 3 seconds
           } catch (error) {
             console.error('Error:', error)
             setStatus(error instanceof Error ? error.message : 'Unknown error')

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const response = await fetch(
       'https://api.podcastindex.org/api/1.0/podcasts/trending?' +
         new URLSearchParams({
-          max: '25',
+          max: '1',
           lang: 'en',
           cat: '9,11,12,102,112',
           pretty: 'true',
