@@ -46,7 +46,9 @@ export async function GET(request: Request) {
 
     const data = await response.json()
     console.log(
-      chalk.blue(`Fetched podcast details in ${Date.now() - detailsStart}ms`),
+      chalk.blue(
+        `Fetched full podcast details in ${Date.now() - detailsStart}ms`,
+      ),
     )
 
     if (!data.feed) {

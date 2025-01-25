@@ -15,6 +15,48 @@ export default function TrendingPage() {
 
         const data = (await response.json()) as TrendingPodcastsResponse
         setFeeds(data.feeds.slice(0, 12))
+
+        // Process each trending podcast
+        for (const feed of data.feeds) {
+          // Step 2: Get complete podcast details
+          const detailsResponse = await fetch(
+            `/api/podcast-index/by-feed-id?${new URLSearchParams({
+              feedId: feed.id.toString(),
+            })}`,
+          )
+          const podcastDetails = await detailsResponse.json()
+
+          if (podcastDetails.error) {
+            console.error(
+              `Failed to fetch details for Trending Podcast: "${feed.title}":`,
+              podcastDetails.error,
+            )
+            continue
+          }
+          console.log(podcastDetails)
+
+          // Save podcast to database
+          const saveResponse = await fetch('/api/supabase/add-podcast', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              podcast: podcastDetails,
+            }),
+          })
+
+          const saveData = await saveResponse.json()
+
+          if (saveData.error) {
+            console.error(`Failed to save "${feed.title}":`, saveData.error)
+            continue
+          }
+
+          console.log(
+            `${saveData.source === 'database' ? 'Found' : 'Added'} "${feed.title}"`,
+          )
+        }
       } catch (error) {
         console.error('Error:', error)
       }
