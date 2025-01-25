@@ -93,7 +93,7 @@ export const TrendingPodcastSchema = z.object({
   image: z.string().url(),
   artwork: z.string().url(),
   newestItemPublishTime: z.number(),
-  itunesId: z.number(),
+  itunesId: z.number().nullable(),
   trendScore: z.number(),
   language: z.string(),
   categories: z.record(z.string()), // Adjust based on actual categories structure

@@ -1,7 +1,6 @@
 import { AudioProvider } from '@/components/AudioProvider'
 import { AudioPlayer } from '@/components/player/AudioPlayer'
 import { Waveform } from '@/components/Waveform'
-import { TrendingPodcastsButton } from '@/components/TrendingPodcastsButton'
 import { PodcastSearch } from '@/components/PodcastSearch'
 import { CurrentPodcast } from '@/components/CurrentPodcast'
 
@@ -21,12 +20,6 @@ export default function MainLayout({
               role="list"
               className="mt-4 flex justify-center gap-10 text-base font-medium leading-7 text-slate-700 sm:gap-8 lg:flex-col lg:gap-4"
             >
-              <li className="flex">
-                <TrendingPodcastsButton
-                  endpoint="trending-podcasts"
-                  label="Fetch Trending"
-                />
-              </li>
               <li className="flex">
                 <PodcastSearch />
               </li>
