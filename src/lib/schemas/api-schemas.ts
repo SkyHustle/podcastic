@@ -9,37 +9,56 @@ const BaseApiResponse = {
   status_code: z.number().optional(),
 }
 
-// // Podcast feed from API
-// export const PodcastFeedSchema = z.object({
-//   ...BasePodcastFields,
-//   id: z.number(),
-//   url: z.string().url(),
-//   artwork: z.string().url(),
-//   ownerName: z.string().nullable().optional(),
-//   originalUrl: z.string().url().nullable().optional(),
-//   lastUpdateTime: z.number().nullable().optional(),
-//   lastCrawlTime: z.number().nullable().optional(),
-//   lastParseTime: z.number().nullable().optional(),
-//   lastGoodHttpStatusTime: z.number().nullable().optional(),
-//   lastHttpStatus: z.number().nullable().optional(),
-//   contentType: z.string().nullable().optional(),
-//   itunesId: z.number().nullable(),
-//   generator: z.string().nullable().optional(),
-//   type: z
-//     .union([z.literal(0), z.literal(1)])
-//     .nullable()
-//     .optional(),
-//   medium: z.string().nullable().optional(),
-//   dead: z.number().default(0),
-//   episodeCount: z.number().optional(),
-//   crawlErrors: z.number().default(0),
-//   parseErrors: z.number().default(0),
-//   locked: z.number().default(0),
-//   imageUrlHash: z.number().nullable().optional(),
-//   newestItemPubdate: z.number().nullable().optional(),
-//   trendScore: z.number().optional(),
-//   podcastGuid: z.string().optional(),
-// })
+// Base media fields
+export const BaseMediaFields = {
+  title: z.string(),
+  description: z.string(),
+  link: z.string().url().nullable(),
+  image: z.string().url(),
+}
+
+// Base podcast API response fields
+export const BasePodcastFields = {
+  ...BaseMediaFields,
+  author: z.string(),
+  language: z.string(),
+  explicit: z
+    .union([z.boolean(), z.number()])
+    .transform((val) => (typeof val === 'number' ? Boolean(val) : val)),
+  categories: z.record(z.string(), z.string()).default({}),
+}
+
+// Podcast feed from API
+export const PodcastResponseSchema = z.object({
+  ...BasePodcastFields,
+  id: z.number(),
+  url: z.string().url(),
+  artwork: z.string().url(),
+  ownerName: z.string().nullable().optional(),
+  originalUrl: z.string().url().nullable().optional(),
+  lastUpdateTime: z.number().nullable().optional(),
+  lastCrawlTime: z.number().nullable().optional(),
+  lastParseTime: z.number().nullable().optional(),
+  lastGoodHttpStatusTime: z.number().nullable().optional(),
+  lastHttpStatus: z.number().nullable().optional(),
+  contentType: z.string().nullable().optional(),
+  itunesId: z.number().nullable(),
+  generator: z.string().nullable().optional(),
+  type: z
+    .union([z.literal(0), z.literal(1)])
+    .nullable()
+    .optional(),
+  medium: z.string().nullable().optional(),
+  dead: z.number().default(0),
+  episodeCount: z.number().optional(),
+  crawlErrors: z.number().default(0),
+  parseErrors: z.number().default(0),
+  locked: z.number().default(0),
+  imageUrlHash: z.number().nullable().optional(),
+  newestItemPubdate: z.number().nullable().optional(),
+  trendScore: z.number().optional(),
+  podcastGuid: z.string().optional(),
+})
 
 // // Episode from API
 // export const PodcastEpisodeSchema = z.object({
@@ -77,7 +96,7 @@ const BaseApiResponse = {
 // export const PodcastSearchResponseSchema = z.object({
 //   ...BaseApiResponse,
 //   feeds: z.array(
-//     PodcastFeedSchema.extend({
+//     PodcastRe.extend({
 //       podcastGuid: z.string(),
 //     }),
 //   ),
@@ -110,9 +129,9 @@ export const TrendingPodcastsResponseSchema = z.object({
 // })
 
 // // Derived types
-// export type PodcastFeed = z.infer<typeof PodcastFeedSchema>
+// export type PodcastFeed = z.infer<typeof PodcastRe>
 // export type PodcastEpisode = z.infer<typeof PodcastEpisodeSchema>
-// export type PodcastSearchResponse = z.infer<typeof PodcastSearchResponseSchema>
+export type PodcastSearchResponse = z.infer<typeof PodcastResponseSchema>
 export type TrendingPodcastsResponse = z.infer<
   typeof TrendingPodcastsResponseSchema
 >

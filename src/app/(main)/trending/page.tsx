@@ -2,7 +2,10 @@
 
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
-import type { TrendingPodcastsResponse } from '@/lib/schemas/api-schemas'
+import type {
+  TrendingPodcastsResponse,
+  PodcastSearchResponse,
+} from '@/lib/schemas'
 
 export default function TrendingPage() {
   const [feeds, setFeeds] = useState<TrendingPodcastsResponse['feeds']>([])
@@ -18,22 +21,22 @@ export default function TrendingPage() {
 
         // Process each trending podcast
         for (const feed of data.feeds) {
-          // Step 2: Get complete podcast details
+          // Get complete podcast details
           const detailsResponse = await fetch(
             `/api/podcast-index/by-feed-id?${new URLSearchParams({
               feedId: feed.id.toString(),
             })}`,
           )
-          const podcastDetails = await detailsResponse.json()
+          const podcastDetails =
+            (await detailsResponse.json()) as PodcastSearchResponse
 
-          if (podcastDetails.error) {
+          if ('error' in podcastDetails) {
             console.error(
-              `Failed to fetch details for Trending Podcast: "${feed.title}":`,
+              `Failed to fetch details for podcast "${feed.title}":`,
               podcastDetails.error,
             )
             continue
           }
-          console.log(podcastDetails)
 
           // Save podcast to database
           const saveResponse = await fetch('/api/supabase/add-podcast', {
@@ -48,7 +51,7 @@ export default function TrendingPage() {
 
           const saveData = await saveResponse.json()
 
-          if (saveData.error) {
+          if ('error' in saveData) {
             console.error(`Failed to save "${feed.title}":`, saveData.error)
             continue
           }

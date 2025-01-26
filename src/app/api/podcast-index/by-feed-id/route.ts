@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
+import { PodcastResponseSchema } from '@/lib/schemas'
 
 export async function GET(request: Request) {
   try {
@@ -44,6 +45,10 @@ export async function GET(request: Request) {
       },
     )
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
     const data = await response.json()
     console.log(
       chalk.blue(
@@ -55,7 +60,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Podcast not found' }, { status: 404 })
     }
 
-    return NextResponse.json(data.feed)
+    const validated = PodcastResponseSchema.safeParse(data.feed)
+
+    if (!validated.success) {
+      console.error(
+        'Validation errors:',
+        JSON.stringify(validated.error.errors, null, 2),
+      )
+      return NextResponse.json(
+        { error: validated.error.errors },
+        { status: 400 },
+      )
+    }
+
+    return NextResponse.json(validated.data)
   } catch (error) {
     console.error('Error fetching podcast details:', error)
     return NextResponse.json(

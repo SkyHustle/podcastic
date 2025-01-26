@@ -63,14 +63,6 @@ export const PodcastSchema = z.object({
 //   value: z.unknown().nullable(),
 // })
 
-export const TrendingPodcastSchema = z.object({
-  id: z.number(),
-  created_at: z.string(),
-  podcast_id: z.number(),
-  trend_score: z.number(),
-  trending_at: z.string(),
-})
-
 // // Search result schemas
 // export const PodcastSearchResultSchema = z.object({
 //   id: z.number(),
@@ -94,7 +86,5 @@ export type Podcast = z.infer<typeof PodcastSchema>
 export type PodcastInsert = Omit<Podcast, 'id' | 'created_at'>
 // export type Episode = z.infer<typeof EpisodeSchema>
 // export type EpisodeInsert = Omit<Episode, 'id' | 'created_at'>
-export type TrendingPodcast = z.infer<typeof TrendingPodcastSchema>
-// export type TrendingPodcastInsert = Omit<TrendingPodcast, 'id' | 'created_at'>
 // export type PodcastSearchResult = z.infer<typeof PodcastSearchResultSchema>
 // export type EpisodeSearchResult = z.infer<typeof EpisodeSearchResultSchema>
