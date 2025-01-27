@@ -89,9 +89,9 @@ export default function TrendingPage() {
       queryKey: ['podcast-processed', feed.id],
       queryFn: () => processPodcast(feed),
       // Don't refetch automatically
-      staleTime: Infinity,
+      staleTime: 1000 * 60 * 15, // 15 minutes
       // But keep the data cached
-      gcTime: Infinity,
+      gcTime: 1000 * 60 * 30, // 30 minutes
       // Don't retry on error
       retry: false,
     })),
