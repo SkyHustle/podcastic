@@ -1,9 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import type {
   TrendingPodcastsResponse,
   PodcastSearchResponse,
@@ -15,15 +15,15 @@ interface SavedPodcast {
   image: string
 }
 
-async function fetchAndProcessTrendingPodcasts() {
+async function fetchTrendingPodcasts() {
   const response = await fetch('/api/podcast-index/trending')
   if (!response.ok) throw new Error('Failed to fetch trending podcasts')
   const data = (await response.json()) as TrendingPodcastsResponse
+  return data.feeds
+}
 
-  const savedPodcasts: Record<number, SavedPodcast> = {}
-
-  // Process each trending podcast
-  for (const feed of data.feeds) {
+async function processPodcast(feed: TrendingPodcastsResponse['feeds'][0]) {
+  try {
     // Get complete podcast details
     const detailsResponse = await fetch(
       `/api/podcast-index/by-feed-id?${new URLSearchParams({
@@ -34,11 +34,11 @@ async function fetchAndProcessTrendingPodcasts() {
       (await detailsResponse.json()) as PodcastSearchResponse
 
     if ('error' in podcastDetails) {
-      console.error(
-        `Failed to fetch details for podcast "${feed.title}":`,
-        podcastDetails.error,
+      throw new Error(
+        typeof podcastDetails.error === 'string'
+          ? podcastDetails.error
+          : 'Unknown error occurred',
       )
-      continue
     }
 
     // Save podcast to database
@@ -55,34 +55,60 @@ async function fetchAndProcessTrendingPodcasts() {
     const saveData = await saveResponse.json()
 
     if ('error' in saveData) {
-      console.error(`Failed to save "${feed.title}":`, saveData.error)
-      continue
+      throw new Error(saveData.error)
     }
 
-    savedPodcasts[feed.id] = {
-      id: saveData.podcast.id,
-      title: feed.title,
-      image: feed.image,
+    return {
+      feedId: feed.id,
+      savedPodcast: {
+        id: saveData.podcast.id,
+        title: feed.title,
+        image: feed.image,
+      },
     }
-
-    console.log(
-      `${saveData.source === 'database' ? 'Found' : 'Added'} "${feed.title}"`,
-    )
-  }
-
-  return {
-    feeds: data.feeds,
-    savedPodcasts,
+  } catch (error) {
+    console.error(`Failed to process podcast "${feed.title}":`, error)
+    return null
   }
 }
 
 export default function TrendingPage() {
-  const { data, isLoading, error } = useQuery({
+  // Fetch trending podcasts
+  const {
+    data: feeds = [],
+    isLoading: isLoadingFeeds,
+    error: feedsError,
+  } = useQuery({
     queryKey: ['trending-podcasts'],
-    queryFn: fetchAndProcessTrendingPodcasts,
+    queryFn: fetchTrendingPodcasts,
   })
 
-  if (error) {
+  // Process each podcast in parallel
+  const podcastQueries = useQueries({
+    queries: feeds.map((feed) => ({
+      queryKey: ['podcast-processed', feed.id],
+      queryFn: () => processPodcast(feed),
+      // Don't refetch automatically
+      staleTime: Infinity,
+      // But keep the data cached
+      gcTime: Infinity,
+      // Don't retry on error
+      retry: false,
+    })),
+  })
+
+  // Convert the processed results into a map
+  const savedPodcasts = podcastQueries.reduce(
+    (acc, query) => {
+      if (query.data?.feedId && query.data?.savedPodcast) {
+        acc[query.data.feedId] = query.data.savedPodcast
+      }
+      return acc
+    },
+    {} as Record<number, SavedPodcast>,
+  )
+
+  if (feedsError) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-red-500">Failed to load trending podcasts</p>
@@ -90,7 +116,7 @@ export default function TrendingPage() {
     )
   }
 
-  if (isLoading || !data) {
+  if (isLoadingFeeds) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Loading...</p>
@@ -110,8 +136,8 @@ export default function TrendingPage() {
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4">
-            {data.feeds.map((feed) => {
-              const savedPodcast = data.savedPodcasts[feed.id]
+            {feeds.map((feed) => {
+              const savedPodcast = savedPodcasts[feed.id]
               return (
                 <div key={feed.id} className="group relative">
                   <Link
