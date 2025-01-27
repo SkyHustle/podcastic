@@ -1,5 +1,5 @@
 import { type Metadata } from 'next'
-
+import Providers from '@/components/Providers'
 import '@/styles/tailwind.css'
 
 export const metadata: Metadata = {
@@ -29,7 +29,9 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full">
-        <div className="w-full">{children}</div>
+        <Providers>
+          <div className="w-full">{children}</div>
+        </Providers>
       </body>
     </html>
   )

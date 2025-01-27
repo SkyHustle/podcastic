@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import type {
   TrendingPodcastsResponse,
   PodcastSearchResponse,
@@ -14,79 +15,88 @@ interface SavedPodcast {
   image: string
 }
 
-export default function TrendingPage() {
-  const [feeds, setFeeds] = useState<TrendingPodcastsResponse['feeds']>([])
-  const [savedPodcasts, setSavedPodcasts] = useState<
-    Record<number, SavedPodcast>
-  >({})
+async function fetchAndProcessTrendingPodcasts() {
+  const response = await fetch('/api/podcast-index/trending')
+  if (!response.ok) throw new Error('Failed to fetch trending podcasts')
+  const data = (await response.json()) as TrendingPodcastsResponse
 
-  useEffect(() => {
-    const fetchTrendingPodcasts = async () => {
-      try {
-        const response = await fetch('/api/podcast-index/trending')
-        if (!response.ok) throw new Error('Failed to fetch trending podcasts')
+  const savedPodcasts: Record<number, SavedPodcast> = {}
 
-        const data = (await response.json()) as TrendingPodcastsResponse
-        setFeeds(data.feeds)
+  // Process each trending podcast
+  for (const feed of data.feeds) {
+    // Get complete podcast details
+    const detailsResponse = await fetch(
+      `/api/podcast-index/by-feed-id?${new URLSearchParams({
+        feedId: feed.id.toString(),
+      })}`,
+    )
+    const podcastDetails =
+      (await detailsResponse.json()) as PodcastSearchResponse
 
-        // Process each trending podcast
-        for (const feed of data.feeds) {
-          // Get complete podcast details
-          const detailsResponse = await fetch(
-            `/api/podcast-index/by-feed-id?${new URLSearchParams({
-              feedId: feed.id.toString(),
-            })}`,
-          )
-          const podcastDetails =
-            (await detailsResponse.json()) as PodcastSearchResponse
-
-          if ('error' in podcastDetails) {
-            console.error(
-              `Failed to fetch details for podcast "${feed.title}":`,
-              podcastDetails.error,
-            )
-            continue
-          }
-
-          // Save podcast to database
-          const saveResponse = await fetch('/api/supabase/add-podcast', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              podcast: podcastDetails,
-            }),
-          })
-
-          const saveData = await saveResponse.json()
-
-          if ('error' in saveData) {
-            console.error(`Failed to save "${feed.title}":`, saveData.error)
-            continue
-          }
-
-          // Store the saved podcast ID for the feed
-          setSavedPodcasts((prev) => ({
-            ...prev,
-            [feed.id]: {
-              id: saveData.podcast.id,
-              title: feed.title,
-              image: feed.image,
-            },
-          }))
-
-          console.log(
-            `${saveData.source === 'database' ? 'Found' : 'Added'} "${feed.title}"`,
-          )
-        }
-      } catch (error) {
-        console.error('Error:', error)
-      }
+    if ('error' in podcastDetails) {
+      console.error(
+        `Failed to fetch details for podcast "${feed.title}":`,
+        podcastDetails.error,
+      )
+      continue
     }
 
-    fetchTrendingPodcasts()
-  }, [])
+    // Save podcast to database
+    const saveResponse = await fetch('/api/supabase/add-podcast', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        podcast: podcastDetails,
+      }),
+    })
+
+    const saveData = await saveResponse.json()
+
+    if ('error' in saveData) {
+      console.error(`Failed to save "${feed.title}":`, saveData.error)
+      continue
+    }
+
+    savedPodcasts[feed.id] = {
+      id: saveData.podcast.id,
+      title: feed.title,
+      image: feed.image,
+    }
+
+    console.log(
+      `${saveData.source === 'database' ? 'Found' : 'Added'} "${feed.title}"`,
+    )
+  }
+
+  return {
+    feeds: data.feeds,
+    savedPodcasts,
+  }
+}
+
+export default function TrendingPage() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['trending-podcasts'],
+    queryFn: fetchAndProcessTrendingPodcasts,
+  })
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-red-500">Failed to load trending podcasts</p>
+      </div>
+    )
+  }
+
+  if (isLoading || !data) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white py-12 sm:py-16">
@@ -100,8 +110,8 @@ export default function TrendingPage() {
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4">
-            {feeds.map((feed) => {
-              const savedPodcast = savedPodcasts[feed.id]
+            {data.feeds.map((feed) => {
+              const savedPodcast = data.savedPodcasts[feed.id]
               return (
                 <div key={feed.id} className="group relative">
                   <Link

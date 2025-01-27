@@ -1,47 +1,44 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Podcast } from '@/lib/schemas'
 
+async function fetchPodcast(id: string) {
+  const response = await fetch(
+    `/api/supabase/fetch-podcast?${new URLSearchParams({
+      id,
+    })}`,
+  )
+  const data = await response.json()
+
+  if ('error' in data) {
+    throw new Error(data.error)
+  }
+
+  return data as Podcast
+}
+
 export default function PodcastPage({ params }: { params: { id: string } }) {
-  const [podcast, setPodcast] = useState<Podcast | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchPodcast = async () => {
-      try {
-        const response = await fetch(
-          `/api/supabase/fetch-podcast?${new URLSearchParams({
-            id: params.id,
-          })}`,
-        )
-        const data = await response.json()
-
-        if ('error' in data) {
-          setError(data.error)
-          return
-        }
-
-        setPodcast(data)
-        console.log('Fetched podcast:', data)
-      } catch (error) {
-        setError('Failed to fetch podcast')
-        console.error('Error:', error)
-      }
-    }
-
-    fetchPodcast()
-  }, [params.id])
+  const {
+    data: podcast,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['podcast', params.id],
+    queryFn: () => fetchPodcast(params.id),
+  })
 
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">
+          {error instanceof Error ? error.message : 'Failed to load podcast'}
+        </p>
       </div>
     )
   }
 
-  if (!podcast) {
+  if (isLoading || !podcast) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Loading...</p>
