@@ -9,26 +9,19 @@ export default function MainLayout({
 }) {
   return (
     <AudioProvider>
-      <div className="relative min-h-screen">
-        {/* Waveform with higher z-index to ensure visibility */}
-        <div className="fixed inset-x-0 top-0 z-30">
-          <Waveform className="h-20 w-full" />
-        </div>
-
-        {/* Main content */}
-        <main className="relative border-t border-slate-200 pt-20">
-          {children}
+      <div className="w-full">
+        <main className="border-t border-slate-200 lg:relative lg:mb-28 lg:border-t-0">
+          <Waveform className="absolute left-0 top-0 h-20 w-full" />
+          <div className="relative">{children}</div>
         </main>
 
-        {/* Footer */}
         <footer className="border-t border-slate-200 bg-slate-50 py-10 pb-40 sm:py-16 sm:pb-32 lg:hidden">
           <div className="mx-auto px-4 sm:px-6 md:max-w-2xl md:px-4">
             Mobile Footer
           </div>
         </footer>
 
-        {/* Audio Player */}
-        <div className="fixed inset-x-0 bottom-0 z-40">
+        <div className="fixed inset-x-0 bottom-0 z-10 lg:left-112 xl:left-120">
           <AudioPlayer />
         </div>
       </div>
