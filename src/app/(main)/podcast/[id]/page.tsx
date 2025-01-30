@@ -1,16 +1,17 @@
 'use client'
 
 import { useQuery, useMutation } from '@tanstack/react-query'
-import type { Podcast, PodcastEpisodesResponse } from '@/lib/schemas'
+import type { Podcast, PodcastEpisodesResponse, Episode as EpisodeType } from '@/lib/schemas'
 import { PodcastSearch } from '@/components/PodcastSearch'
 import Link from 'next/link'
 import { PodcastImage } from '@/lib/utils/image'
 import React from 'react'
+import { Episode } from '@/components/Episode'
 
-async function fetchPodcast(id: string) {
+async function fetchPodcast(id: number) {
   const response = await fetch(
     `/api/supabase/fetch-podcast?${new URLSearchParams({
-      id,
+      id: id.toString(),
     })}`,
   )
   const data = await response.json()
@@ -22,10 +23,10 @@ async function fetchPodcast(id: string) {
   return data as Podcast
 }
 
-async function fetchEpisodes(feedId: string) {
+async function fetchEpisodes(feedId: number) {
   const response = await fetch(
     `/api/podcast-index/episodes?${new URLSearchParams({
-      feedId,
+      feedId: feedId.toString(),
     })}`,
   )
   const data = await response.json()
@@ -55,10 +56,10 @@ async function saveEpisodes(episodes: PodcastEpisodesResponse, podcast_id: numbe
     throw new Error(data.error)
   }
 
-  return data
+  return data as EpisodeType[]
 }
 
-export default function PodcastPage({ params }: { params: { id: string } }) {
+export default function PodcastPage({ params }: { params: { id: number } }) {
   const {
     data: podcast,
     isLoading: isPodcastLoading,
@@ -69,33 +70,34 @@ export default function PodcastPage({ params }: { params: { id: string } }) {
   })
 
   const {
-    data: episodes,
-    isLoading: isEpisodesLoading,
-    error: episodesError,
+    data: podcastIndexEpisodes,
+    isLoading: isPodcastIndexEpisodesLoading,
+    error: podcastIndexEpisodesError,
   } = useQuery({
-    queryKey: ['episodes', podcast?.feed_id],
-    queryFn: () => fetchEpisodes(podcast?.feed_id ?? ''),
+    queryKey: ['podcastIndexEpisodes', podcast?.feed_id],
+    queryFn: () => fetchEpisodes(podcast?.feed_id ?? 0),
     enabled: !!podcast?.feed_id,
   })
 
-  // Save episodes when they are loaded
-  const { mutate: saveEpisodesMutation } = useMutation({
+  const {
+    data: savedEpisodes,
+    isPending: isSavingEpisodes,
+    error: saveEpisodesError,
+    mutate: saveEpisodesMutation,
+  } = useMutation({
     mutationFn: (data: { episodes: PodcastEpisodesResponse; podcast_id: number }) =>
       saveEpisodes(data.episodes, data.podcast_id),
   })
 
+  // When we get episodes from Podcast Index, save them to our database
   React.useEffect(() => {
-    if (episodes && podcast?.id) {
-      saveEpisodesMutation({ episodes, podcast_id: podcast.id })
+    if (podcastIndexEpisodes && podcast?.id) {
+      saveEpisodesMutation({
+        episodes: podcastIndexEpisodes,
+        podcast_id: podcast.id,
+      })
     }
-  }, [episodes, podcast?.id, saveEpisodesMutation])
-
-  // Log episodes when they are loaded
-  React.useEffect(() => {
-    if (episodes) {
-      console.log('Podcast episodes:', episodes)
-    }
-  }, [episodes])
+  }, [podcastIndexEpisodes, podcast?.id, saveEpisodesMutation])
 
   if (podcastError) {
     return (
@@ -114,6 +116,9 @@ export default function PodcastPage({ params }: { params: { id: string } }) {
       </div>
     )
   }
+
+  const isLoading = isPodcastIndexEpisodesLoading || isSavingEpisodes
+  const error = podcastIndexEpisodesError || saveEpisodesError
 
   return (
     <div className="w-full">
@@ -148,7 +153,21 @@ export default function PodcastPage({ params }: { params: { id: string } }) {
             </div>
           </div>
           <div className="divide-y divide-slate-100 sm:mt-4 lg:mt-8 lg:border-t lg:border-slate-100">
-            {/* Episodes list will go here */}
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <p>Loading episodes...</p>
+              </div>
+            ) : error ? (
+              <div className="flex justify-center py-10">
+                <p className="text-red-500">{error instanceof Error ? error.message : 'Failed to load episodes'}</p>
+              </div>
+            ) : savedEpisodes && savedEpisodes.length > 0 ? (
+              savedEpisodes.map((episode) => <Episode key={episode.id} episode={episode} />)
+            ) : (
+              <div className="flex justify-center py-10">
+                <p>No episodes found</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

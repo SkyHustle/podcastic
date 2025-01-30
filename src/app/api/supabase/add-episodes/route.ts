@@ -67,11 +67,15 @@ export async function POST(request: Request) {
       transcript_url: episode.transcriptUrl || null,
     }))
 
-    // Upsert episodes
-    const { error } = await supabase.from('episodes').upsert(dbEpisodes, {
-      onConflict: 'episode_guid',
-      ignoreDuplicates: false,
-    })
+    // Upsert episodes and return the results
+    const { data: savedEpisodes, error } = await supabase
+      .from('episodes')
+      .upsert(dbEpisodes, {
+        onConflict: 'episode_guid',
+        ignoreDuplicates: false,
+      })
+      .select()
+      .order('date_published', { ascending: false })
 
     if (error) {
       console.error('Error upserting episodes:', error)
@@ -80,7 +84,7 @@ export async function POST(request: Request) {
 
     console.log(chalk.green(`Saved ${dbEpisodes.length} episodes in ${Date.now() - start}ms`))
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json(savedEpisodes)
   } catch (error) {
     console.error('Error processing request:', error)
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
