@@ -1,10 +1,11 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import type { Podcast } from '@/lib/schemas'
+import type { Podcast, PodcastEpisodesResponse } from '@/lib/schemas'
 import { PodcastSearch } from '@/components/PodcastSearch'
 import Link from 'next/link'
 import { PodcastImage } from '@/lib/utils/image'
+import React from 'react'
 
 async function fetchPodcast(id: string) {
   const response = await fetch(
@@ -21,27 +22,59 @@ async function fetchPodcast(id: string) {
   return data as Podcast
 }
 
+async function fetchEpisodes(feedId: string) {
+  const response = await fetch(
+    `/api/podcast-index/episodes?${new URLSearchParams({
+      feedId,
+    })}`,
+  )
+  const data = await response.json()
+
+  if ('error' in data) {
+    throw new Error(data.error)
+  }
+
+  return data as PodcastEpisodesResponse
+}
+
 export default function PodcastPage({ params }: { params: { id: string } }) {
   const {
     data: podcast,
-    isLoading,
-    error,
+    isLoading: isPodcastLoading,
+    error: podcastError,
   } = useQuery({
     queryKey: ['podcast', params.id],
     queryFn: () => fetchPodcast(params.id),
   })
 
-  if (error) {
+  const {
+    data: episodes,
+    isLoading: isEpisodesLoading,
+    error: episodesError,
+  } = useQuery({
+    queryKey: ['episodes', podcast?.feed_id],
+    queryFn: () => fetchEpisodes(podcast?.feed_id ?? ''),
+    enabled: !!podcast?.feed_id,
+  })
+
+  // Log episodes when they are loaded
+  React.useEffect(() => {
+    if (episodes) {
+      console.log('Podcast episodes:', episodes)
+    }
+  }, [episodes])
+
+  if (podcastError) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-red-500">
-          {error instanceof Error ? error.message : 'Failed to load podcast'}
+          {podcastError instanceof Error ? podcastError.message : 'Failed to load podcast'}
         </p>
       </div>
     )
   }
 
-  if (isLoading || !podcast) {
+  if (isPodcastLoading || !podcast) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Loading...</p>
@@ -61,9 +94,7 @@ export default function PodcastPage({ params }: { params: { id: string } }) {
             <p className="text-xl font-bold text-slate-900">
               <Link href="/">{podcast.title}</Link>
             </p>
-            <p className="text-md mt-3 font-medium leading-8 text-slate-700">
-              {podcast.description}
-            </p>
+            <p className="text-md mt-3 font-medium leading-8 text-slate-700">{podcast.description}</p>
           </div>
           <section className="mt-10 lg:mt-12">
             <div className="h-px bg-gradient-to-r from-slate-200/0 via-slate-200 to-slate-200/0 lg:hidden" />
@@ -79,9 +110,7 @@ export default function PodcastPage({ params }: { params: { id: string } }) {
           <div className="lg:px-8">
             <div className="lg:max-w-4xl">
               <div className="mx-auto px-4 sm:px-6 md:max-w-2xl md:px-4 lg:px-0">
-                <h1 className="text-2xl font-bold leading-7 text-slate-900">
-                  Episodes
-                </h1>
+                <h1 className="text-2xl font-bold leading-7 text-slate-900">Episodes</h1>
               </div>
             </div>
           </div>

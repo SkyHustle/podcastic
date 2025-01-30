@@ -22,9 +22,7 @@ export const BasePodcastFields = {
   ...BaseMediaFields,
   author: z.string(),
   language: z.string(),
-  explicit: z
-    .union([z.boolean(), z.number()])
-    .transform((val) => (typeof val === 'number' ? Boolean(val) : val)),
+  explicit: z.union([z.boolean(), z.number()]).transform((val) => (typeof val === 'number' ? Boolean(val) : val)),
   categories: z.record(z.string(), z.string()).default({}),
 }
 
@@ -60,37 +58,37 @@ export const PodcastResponseSchema = z.object({
   podcastGuid: z.string().optional(),
 })
 
-// // Episode from API
-// export const PodcastEpisodeSchema = z.object({
-//   id: z.number(),
-//   title: z.string(),
-//   link: z.string().url().nullable().optional(),
-//   description: z.string(),
-//   guid: z.string(),
-//   datePublished: z.number(),
-//   datePublishedPretty: z.string(),
-//   dateCrawled: z.number().optional(),
-//   enclosureUrl: z.string().url(),
-//   enclosureType: z.string(),
-//   enclosureLength: z.number().nullable().optional(),
-//   duration: z.number().nullable().optional(),
-//   explicit: z.number(),
-//   episode: z.number().nullable().optional(),
-//   episodeType: EpisodeType.nullable().optional(),
-//   season: z.number().nullable().optional(),
-//   image: z.string().url().nullable().optional().or(z.literal('')),
-//   feedItunesId: z.number().nullable().optional(),
-//   feedImage: z.string().url().nullable().optional(),
-//   feedId: z.number(),
-//   podcastGuid: z.string(),
-//   chaptersUrl: z.string().url().nullable().optional(),
-//   transcriptUrl: z.string().url().nullable().optional(),
-//   soundbite: z.unknown().optional(),
-//   soundbites: z.unknown().optional(),
-//   persons: z.unknown().optional(),
-//   socialInteract: z.unknown().optional(),
-//   value: z.unknown().optional(),
-// })
+// Episode from API
+export const PodcastEpisodeSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  link: z.union([z.string().url(), z.string().length(0), z.null()]).optional(),
+  description: z.string(),
+  guid: z.string(),
+  datePublished: z.number(),
+  datePublishedPretty: z.string(),
+  dateCrawled: z.number().optional(),
+  enclosureUrl: z.string().url(),
+  enclosureType: z.string(),
+  enclosureLength: z.number().nullable().optional(),
+  duration: z.number().nullable().optional(),
+  explicit: z.number(),
+  episode: z.number().nullable().optional(),
+  episodeType: z.enum(['full', 'trailer', 'bonus']).nullable().optional(),
+  season: z.number().nullable().optional(),
+  image: z.string().url().nullable().optional().or(z.literal('')),
+  feedItunesId: z.number().nullable().optional(),
+  feedImage: z.string().url().nullable().optional(),
+  feedId: z.number(),
+  podcastGuid: z.string(),
+  chaptersUrl: z.string().url().nullable().optional(),
+  transcriptUrl: z.string().url().nullable().optional(),
+  soundbite: z.unknown().optional(),
+  soundbites: z.unknown().optional(),
+  persons: z.unknown().optional(),
+  socialInteract: z.unknown().optional(),
+  value: z.unknown().optional(),
+})
 
 // // API Response Schemas
 // export const PodcastSearchResponseSchema = z.object({
@@ -123,18 +121,14 @@ export const TrendingPodcastsResponseSchema = z.object({
   feeds: z.array(TrendingPodcastSchema),
 })
 
-// export const PodcastEpisodesResponseSchema = z.object({
-//   ...BaseApiResponse,
-//   items: z.array(PodcastEpisodeSchema),
-// })
+export const PodcastEpisodesResponseSchema = z.object({
+  ...BaseApiResponse,
+  items: z.array(PodcastEpisodeSchema),
+})
 
 // // Derived types
 // export type PodcastFeed = z.infer<typeof PodcastRe>
 // export type PodcastEpisode = z.infer<typeof PodcastEpisodeSchema>
 export type PodcastSearchResponse = z.infer<typeof PodcastResponseSchema>
-export type TrendingPodcastsResponse = z.infer<
-  typeof TrendingPodcastsResponseSchema
->
-// export type PodcastEpisodesResponse = z.infer<
-//   typeof PodcastEpisodesResponseSchema
-// >
+export type TrendingPodcastsResponse = z.infer<typeof TrendingPodcastsResponseSchema>
+export type PodcastEpisodesResponse = z.infer<typeof PodcastEpisodesResponseSchema>
