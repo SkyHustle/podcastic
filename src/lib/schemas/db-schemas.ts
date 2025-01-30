@@ -6,7 +6,7 @@ import { BasePodcastFields } from './common-types'
 export const PodcastSchema = z.object({
   id: z.number(),
   created_at: z.string(),
-  feed_id: z.string(),
+  feed_id: z.number(),
   podcast_guid: z.string().nullable(),
   ...BasePodcastFields,
   url: z.string().url(),
@@ -35,33 +35,34 @@ export const PodcastSchema = z.object({
   newest_item_pubdate: z.string().nullable(),
 })
 
-// export const EpisodeSchema = z.object({
-//   id: z.number(),
-//   created_at: z.string(),
-//   episode_guid: z.string(),
-//   podcast_id: z.number(),
-//   title: z.string(),
-//   link: z.string().nullable(),
-//   description: z.string(),
-//   date_published: z.string(),
-//   date_crawled: z.string().nullable(),
-//   enclosure_url: z.string().url(),
-//   enclosure_type: z.string(),
-//   enclosure_length: z.number().nullable(),
-//   duration: z.number().nullable(),
-//   explicit: z.boolean().default(false),
-//   episode_type: EpisodeType.nullable(),
-//   episode_number: z.number().nullable(),
-//   season: z.number().nullable(),
-//   image: z.string().nullable(),
-//   chapters_url: z.string().nullable(),
-//   transcript_url: z.string().nullable(),
-//   soundbite: z.unknown().nullable(),
-//   soundbites: z.unknown().nullable(),
-//   persons: z.unknown().nullable(),
-//   social_interact: z.unknown().nullable(),
-//   value: z.unknown().nullable(),
-// })
+export const EpisodeSchema = z.object({
+  id: z.number(),
+  created_at: z.string(),
+  episode_guid: z.string(),
+  podcast_id: z.number(),
+  feed_id: z.number(),
+  title: z.string(),
+  link: z.string().nullable(),
+  description: z.string(),
+  date_published: z.string(),
+  date_crawled: z.string().nullable(),
+  enclosure_url: z.string().url(),
+  enclosure_type: z.string(),
+  enclosure_length: z.number().nullable(),
+  duration: z.number().nullable(),
+  explicit: z.boolean().default(false),
+  episode_type: z.enum(['full', 'trailer', 'bonus']).nullable().optional().nullable(),
+  episode_number: z.number().nullable(),
+  season: z.number().nullable(),
+  image: z.string().nullable(),
+  chapters_url: z.string().nullable(),
+  transcript_url: z.string().nullable(),
+  soundbite: z.unknown().nullable(),
+  soundbites: z.unknown().nullable(),
+  persons: z.unknown().nullable(),
+  social_interact: z.unknown().nullable(),
+  value: z.unknown().nullable(),
+})
 
 // // Search result schemas
 // export const PodcastSearchResultSchema = z.object({
@@ -84,7 +85,7 @@ export const PodcastSchema = z.object({
 // Derived Types
 export type Podcast = z.infer<typeof PodcastSchema>
 export type PodcastInsert = Omit<Podcast, 'id' | 'created_at'>
-// export type Episode = z.infer<typeof EpisodeSchema>
-// export type EpisodeInsert = Omit<Episode, 'id' | 'created_at'>
+export type Episode = z.infer<typeof EpisodeSchema>
+export type EpisodeInsert = Omit<Episode, 'id' | 'created_at'>
 // export type PodcastSearchResult = z.infer<typeof PodcastSearchResultSchema>
 // export type EpisodeSearchResult = z.infer<typeof EpisodeSearchResultSchema>

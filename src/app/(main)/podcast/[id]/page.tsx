@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import type { Podcast, PodcastEpisodesResponse } from '@/lib/schemas'
 import { PodcastSearch } from '@/components/PodcastSearch'
 import Link from 'next/link'
@@ -37,6 +37,27 @@ async function fetchEpisodes(feedId: string) {
   return data as PodcastEpisodesResponse
 }
 
+async function saveEpisodes(episodes: PodcastEpisodesResponse, podcast_id: number) {
+  const response = await fetch('/api/supabase/add-episodes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      episodes: episodes.items,
+      podcast_id,
+    }),
+  })
+
+  const data = await response.json()
+
+  if ('error' in data) {
+    throw new Error(data.error)
+  }
+
+  return data
+}
+
 export default function PodcastPage({ params }: { params: { id: string } }) {
   const {
     data: podcast,
@@ -56,6 +77,18 @@ export default function PodcastPage({ params }: { params: { id: string } }) {
     queryFn: () => fetchEpisodes(podcast?.feed_id ?? ''),
     enabled: !!podcast?.feed_id,
   })
+
+  // Save episodes when they are loaded
+  const { mutate: saveEpisodesMutation } = useMutation({
+    mutationFn: (data: { episodes: PodcastEpisodesResponse; podcast_id: number }) =>
+      saveEpisodes(data.episodes, data.podcast_id),
+  })
+
+  React.useEffect(() => {
+    if (episodes && podcast?.id) {
+      saveEpisodesMutation({ episodes, podcast_id: podcast.id })
+    }
+  }, [episodes, podcast?.id, saveEpisodesMutation])
 
   // Log episodes when they are loaded
   React.useEffect(() => {
