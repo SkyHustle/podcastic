@@ -1,8 +1,7 @@
 'use client'
 
 import { createContext, useContext, useMemo, useReducer, useRef } from 'react'
-
-import { type Episode } from '@/lib/episodes'
+import type { Episode } from '@/lib/schemas'
 
 interface PlayerState {
   playing: boolean
@@ -77,12 +76,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (episode) {
           dispatch({ type: ActionKind.SET_META, payload: episode })
 
-          if (
-            playerRef.current &&
-            playerRef.current.currentSrc !== episode.audio.src
-          ) {
+          if (playerRef.current && playerRef.current.currentSrc !== episode.enclosure_url) {
             let playbackRate = playerRef.current.playbackRate
-            playerRef.current.src = episode.audio.src
+            playerRef.current.src = episode.enclosure_url
             playerRef.current.load()
             playerRef.current.pause()
             playerRef.current.playbackRate = playbackRate
@@ -117,23 +113,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: ActionKind.TOGGLE_MUTE })
       },
       isPlaying(episode) {
-        return episode
-          ? state.playing && playerRef.current?.currentSrc === episode.audio.src
-          : state.playing
+        return episode ? state.playing && playerRef.current?.currentSrc === episode.enclosure_url : state.playing
       },
     }
   }, [state.playing])
 
-  let api = useMemo<PlayerAPI>(
-    () => ({ ...state, ...actions }),
-    [state, actions],
-  )
+  let api = useMemo<PlayerAPI>(() => ({ ...state, ...actions }), [state, actions])
 
   return (
     <>
-      <AudioPlayerContext.Provider value={api}>
-        {children}
-      </AudioPlayerContext.Provider>
+      <AudioPlayerContext.Provider value={api}>{children}</AudioPlayerContext.Provider>
       <audio
         ref={playerRef}
         onPlay={() => dispatch({ type: ActionKind.PLAY })}
