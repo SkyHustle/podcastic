@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { PodcastImage } from '@/lib/utils/image'
 import React from 'react'
 import { Episode } from '@/components/Episode'
+import { formatEpisode } from '@/lib/utils/episode'
 
 async function fetchPodcast(id: number) {
   const response = await fetch(
@@ -162,7 +163,7 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
                 <p className="text-red-500">{error instanceof Error ? error.message : 'Failed to load episodes'}</p>
               </div>
             ) : savedEpisodes && savedEpisodes.length > 0 ? (
-              savedEpisodes.map((episode) => <Episode key={episode.id} episode={episode} />)
+              savedEpisodes.map((episode) => <Episode key={episode.id} episode={formatEpisode(episode)} />)
             ) : (
               <div className="flex justify-center py-10">
                 <p>No episodes found</p>

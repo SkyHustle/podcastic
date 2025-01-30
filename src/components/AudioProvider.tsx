@@ -1,7 +1,15 @@
 'use client'
 
 import { createContext, useContext, useMemo, useReducer, useRef } from 'react'
-import type { Episode } from '@/lib/schemas'
+import type { Episode as DBEpisode } from '@/lib/schemas'
+
+// Extend the database Episode type with our audio structure
+export interface Episode extends Omit<DBEpisode, 'enclosure_url' | 'enclosure_type'> {
+  audio: {
+    src: string
+    type: string
+  }
+}
 
 interface PlayerState {
   playing: boolean
@@ -76,9 +84,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (episode) {
           dispatch({ type: ActionKind.SET_META, payload: episode })
 
-          if (playerRef.current && playerRef.current.currentSrc !== episode.enclosure_url) {
+          if (playerRef.current && playerRef.current.currentSrc !== episode.audio.src) {
             let playbackRate = playerRef.current.playbackRate
-            playerRef.current.src = episode.enclosure_url
+            playerRef.current.src = episode.audio.src
             playerRef.current.load()
             playerRef.current.pause()
             playerRef.current.playbackRate = playbackRate
@@ -113,7 +121,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: ActionKind.TOGGLE_MUTE })
       },
       isPlaying(episode) {
-        return episode ? state.playing && playerRef.current?.currentSrc === episode.enclosure_url : state.playing
+        return episode ? state.playing && playerRef.current?.currentSrc === episode.audio.src : state.playing
       },
     }
   }, [state.playing])

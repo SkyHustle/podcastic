@@ -1,4 +1,4 @@
-import { type Episode } from '@/lib/schemas'
+import type { Episode as AudioEpisode } from '@/components/AudioProvider'
 import { Container } from './Container'
 import { FormattedDate } from './FormattedDate'
 import { EpisodePlayButton } from './EpisodePlayButton'
@@ -25,7 +25,7 @@ function PlayIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
-export function Episode({ episode }: { episode: Episode }) {
+export function Episode({ episode }: { episode: AudioEpisode }) {
   // Convert ISO string to Date object
   const date = new Date(episode.date_published)
 
