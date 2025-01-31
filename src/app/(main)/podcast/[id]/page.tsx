@@ -8,6 +8,7 @@ import { PodcastImage } from '@/lib/utils/image'
 import React from 'react'
 import { Episode } from '@/components/Episode'
 import { formatEpisode } from '@/lib/utils/episode'
+import { TrendingLink } from '@/components/TrendingLink'
 
 async function fetchPodcast(id: number) {
   const response = await fetch(
@@ -125,6 +126,7 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
     <div className="w-full">
       <header className="bg-slate-50 lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-112 lg:items-start lg:overflow-y-auto xl:w-120">
         <div className="relative z-10 mx-auto px-4 pb-4 pt-24 sm:px-6 md:max-w-2xl md:px-4 lg:min-h-full lg:flex-auto lg:border-x lg:border-slate-200 lg:px-8 lg:py-12 xl:px-12">
+          <TrendingLink />
           <div className="relative mx-auto block w-48 overflow-hidden rounded-lg bg-slate-200 shadow-xl shadow-slate-200 sm:w-64 sm:rounded-xl lg:w-auto lg:rounded-2xl">
             <PodcastImage src={podcast.artwork} alt={podcast.title} />
             <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-black/10 sm:rounded-xl lg:rounded-2xl" />
@@ -133,14 +135,10 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
             <p className="text-xl font-bold text-slate-900">
               <Link href="/">{podcast.title}</Link>
             </p>
-            <p className="text-md mt-3 font-medium leading-8 text-slate-700">{podcast.description}</p>
+            <p className="text-md mt-3 font-medium leading-8 text-slate-700">
+              {podcast.description}
+            </p>
           </div>
-          <section className="mt-10 lg:mt-12">
-            <div className="h-px bg-gradient-to-r from-slate-200/0 via-slate-200 to-slate-200/0 lg:hidden" />
-            <div className="mt-4 flex justify-center lg:block">
-              <PodcastSearch />
-            </div>
-          </section>
         </div>
       </header>
 
@@ -160,10 +158,14 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
               </div>
             ) : error ? (
               <div className="flex justify-center py-10">
-                <p className="text-red-500">{error instanceof Error ? error.message : 'Failed to load episodes'}</p>
+                <p className="text-red-500">
+                  {error instanceof Error ? error.message : 'Failed to load episodes'}
+                </p>
               </div>
             ) : savedEpisodes && savedEpisodes.length > 0 ? (
-              savedEpisodes.map((episode) => <Episode key={episode.id} episode={formatEpisode(episode)} />)
+              savedEpisodes.map((episode) => (
+                <Episode key={episode.id} episode={formatEpisode(episode)} />
+              ))
             ) : (
               <div className="flex justify-center py-10">
                 <p>No episodes found</p>

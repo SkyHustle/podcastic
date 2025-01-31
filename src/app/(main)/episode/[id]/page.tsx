@@ -8,6 +8,7 @@ import { FormattedDate } from '@/components/FormattedDate'
 import { PauseIcon } from '@/components/PauseIcon'
 import { PlayIcon } from '@/components/PlayIcon'
 import { PodcastImage } from '@/lib/utils/image'
+import { TrendingLink } from '@/components/TrendingLink'
 import { supabase } from '@/lib/supabase'
 import { stripHtmlAndUrls, formatDescriptionWithLinks } from '@/lib/utils'
 
@@ -78,6 +79,7 @@ export default async function Episode({ params }: { params: { id: string } }) {
     <div className="w-full">
       <header className="bg-slate-50 lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-112 lg:items-start lg:overflow-y-auto xl:w-120">
         <div className="relative z-10 mx-auto px-4 pb-4 pt-24 sm:px-6 md:max-w-2xl md:px-4 lg:min-h-full lg:flex-auto lg:border-x lg:border-slate-200 lg:px-8 lg:py-12 xl:px-12">
+          <TrendingLink />
           <div className="relative mx-auto block w-48 overflow-hidden rounded-lg bg-slate-200 shadow-xl shadow-slate-200 sm:w-64 sm:rounded-xl lg:w-auto lg:rounded-2xl">
             <PodcastImage src={episode.podcast.artwork} alt={episode.podcast.title} />
             <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-black/10 sm:rounded-xl lg:rounded-2xl" />
