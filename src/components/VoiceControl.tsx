@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAudioPlayer } from './AudioProvider'
 
 declare global {
@@ -12,28 +12,33 @@ declare global {
 
 export function VoiceControl({ episode }: { episode: any }) {
   const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
   const player = useAudioPlayer(episode)
 
-  useEffect(() => {
+  const initializeRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       console.log('Speech recognition not supported')
-      return
+      return null
     }
 
     const recognition = new SpeechRecognition()
-    recognition.continuous = true
+    recognition.continuous = false
     recognition.interimResults = false
     recognition.lang = 'en-US'
 
     recognition.onresult = (event: any) => {
-      const command = event.results[event.results.length - 1][0].transcript.toLowerCase()
-      console.log('Voice command:', command)
+      const transcript = event.results[0][0].transcript.toLowerCase().trim()
+      console.log('Heard:', transcript, 'Confidence:', event.results[0][0].confidence)
 
-      if (command.includes('play')) {
+      if (transcript.includes('play')) {
+        console.log('Executing play command')
         player.play()
-      } else if (command.includes('pause') || command.includes('stop')) {
+        setIsListening(false)
+      } else if (transcript.includes('pause') || transcript.includes('stop')) {
+        console.log('Executing pause command')
         player.pause()
+        setIsListening(false)
       }
     }
 
@@ -42,25 +47,67 @@ export function VoiceControl({ episode }: { episode: any }) {
       setIsListening(false)
     }
 
-    if (isListening) {
-      recognition.start()
+    recognition.onend = () => {
+      console.log('Recognition ended')
+      setIsListening(false)
     }
 
+    return recognition
+  }
+
+  // Initialize recognition when component mounts
+  useEffect(() => {
+    recognitionRef.current = initializeRecognition()
+
     return () => {
-      recognition.stop()
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+          recognitionRef.current = null
+        } catch (e) {
+          console.error('Error during cleanup:', e)
+        }
+      }
     }
-  }, [isListening, player])
+  }, [])
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      recognitionRef.current = initializeRecognition()
+    }
+
+    const newListeningState = !isListening
+    setIsListening(newListeningState)
+
+    if (newListeningState) {
+      console.log('Starting recognition...')
+      try {
+        recognitionRef.current?.start()
+      } catch (e) {
+        console.error('Error starting recognition:', e)
+        setIsListening(false)
+      }
+    } else {
+      console.log('Stopping recognition...')
+      try {
+        recognitionRef.current?.stop()
+      } catch (e) {
+        console.error('Error stopping recognition:', e)
+      }
+    }
+  }
 
   return (
     <button
-      onClick={() => setIsListening(!isListening)}
-      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+      onClick={toggleListening}
+      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
         isListening
           ? 'bg-pink-500 text-white hover:bg-pink-600'
           : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
       }`}
+      title={isListening ? 'Voice commands: "play", "pause", "stop"' : 'Enable voice control'}
     >
-      <MicrophoneIcon className="h-4 w-4" />
+      <MicrophoneIcon className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
       {isListening ? 'Listening...' : 'Enable Voice Control'}
     </button>
   )
