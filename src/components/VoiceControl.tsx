@@ -23,39 +23,59 @@ export function VoiceControl({ episode }: { episode: any }) {
     }
 
     const recognition = new SpeechRecognition()
-    recognition.continuous = false
-    recognition.interimResults = false
+    recognition.continuous = true
+    recognition.interimResults = true
     recognition.lang = 'en-US'
 
+    // Log both interim and final results
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript.toLowerCase().trim()
-      console.log('Heard:', transcript, 'Confidence:', event.results[0][0].confidence)
+      const result = event.results[event.results.length - 1]
+      const transcript = result[0].transcript.toLowerCase().trim()
 
-      if (transcript.includes('play')) {
-        console.log('Executing play command')
-        player.play()
-        setIsListening(false)
-      } else if (transcript.includes('pause') || transcript.includes('stop')) {
-        console.log('Executing pause command')
-        player.pause()
-        setIsListening(false)
+      if (result.isFinal) {
+        console.log('Final:', transcript, '(Confidence:', result[0].confidence, ')')
+
+        // Check for player commands only on final results
+        if (transcript.includes('play')) {
+          console.log('Executing play command')
+          player.play()
+        } else if (transcript.includes('pause')) {
+          console.log('Executing pause command')
+          player.pause()
+        }
+      } else {
+        console.log('Interim:', transcript)
       }
     }
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error)
-      setIsListening(false)
+      // Only restart on non-abort errors
+      if (event.error !== 'aborted' && isListening) {
+        restartRecognition()
+      }
     }
 
     recognition.onend = () => {
-      console.log('Recognition ended')
-      setIsListening(false)
+      console.log('Recognition ended, restarting...')
+      if (isListening) {
+        restartRecognition()
+      }
     }
 
     return recognition
   }
 
-  // Initialize recognition when component mounts
+  const restartRecognition = () => {
+    setTimeout(() => {
+      try {
+        recognitionRef.current?.start()
+      } catch (e) {
+        console.error('Failed to restart recognition:', e)
+      }
+    }, 100)
+  }
+
   useEffect(() => {
     recognitionRef.current = initializeRecognition()
 
@@ -80,7 +100,7 @@ export function VoiceControl({ episode }: { episode: any }) {
     setIsListening(newListeningState)
 
     if (newListeningState) {
-      console.log('Starting recognition...')
+      console.log('Starting continuous recognition...')
       try {
         recognitionRef.current?.start()
       } catch (e) {
@@ -105,7 +125,7 @@ export function VoiceControl({ episode }: { episode: any }) {
           ? 'bg-pink-500 text-white hover:bg-pink-600'
           : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
       }`}
-      title={isListening ? 'Voice commands: "play", "pause", "stop"' : 'Enable voice control'}
+      title="Toggle voice recognition"
     >
       <MicrophoneIcon className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
       {isListening ? 'Listening...' : 'Enable Voice Control'}
