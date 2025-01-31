@@ -13,6 +13,7 @@ declare global {
 export function VoiceControl({ episode }: { episode: any }) {
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
+  const [currentRate, setCurrentRate] = useState(1)
   const player = useAudioPlayer(episode)
 
   const initializeRecognition = () => {
@@ -35,13 +36,56 @@ export function VoiceControl({ episode }: { episode: any }) {
       if (result.isFinal) {
         console.log('Final:', transcript, '(Confidence:', result[0].confidence, ')')
 
-        // Check for player commands only on final results
+        // Playback controls
         if (transcript.includes('play')) {
           console.log('Executing play command')
           player.play()
-        } else if (transcript.includes('pause')) {
+        } else if (transcript.includes('pause') || transcript.includes('stop')) {
           console.log('Executing pause command')
           player.pause()
+        }
+
+        // Forward/Rewind
+        else if (transcript.includes('forward') || transcript.includes('skip forward')) {
+          console.log('Executing forward command')
+          player.seekBy(10)
+        } else if (transcript.includes('rewind') || transcript.includes('go back')) {
+          console.log('Executing rewind command')
+          player.seekBy(-10)
+        }
+
+        // Playback speed
+        else if (transcript.includes('speed up') || transcript.includes('faster')) {
+          console.log('Executing speed up command')
+          const rates = [1, 1.5, 2]
+          const currentIndex = rates.indexOf(currentRate)
+          const nextRate = rates[(currentIndex + 1) % rates.length]
+          console.log('Setting playback rate to:', nextRate)
+          player.playbackRate(nextRate)
+          setCurrentRate(nextRate)
+        } else if (transcript.includes('slow down') || transcript.includes('slower')) {
+          console.log('Executing slow down command')
+          const rates = [1, 1.5, 2]
+          const currentIndex = rates.indexOf(currentRate)
+          const prevRate = rates[(currentIndex - 1 + rates.length) % rates.length]
+          console.log('Setting playback rate to:', prevRate)
+          player.playbackRate(prevRate)
+          setCurrentRate(prevRate)
+        } else if (transcript.includes('normal speed')) {
+          console.log('Executing normal speed command')
+          player.playbackRate(1)
+          setCurrentRate(1)
+        }
+
+        // Volume control
+        else if (transcript.includes('mute')) {
+          console.log('Executing mute command')
+          player.toggleMute()
+        } else if (transcript.includes('unmute')) {
+          console.log('Executing unmute command')
+          if (player.muted) {
+            player.toggleMute()
+          }
         }
       } else {
         console.log('Interim:', transcript)
@@ -125,7 +169,11 @@ export function VoiceControl({ episode }: { episode: any }) {
           ? 'bg-pink-500 text-white hover:bg-pink-600'
           : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
       }`}
-      title="Toggle voice recognition"
+      title={
+        isListening
+          ? 'Voice commands: play, pause, forward, rewind, speed up, slow down, normal speed, mute, unmute'
+          : 'Enable voice control'
+      }
     >
       <MicrophoneIcon className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
       {isListening ? 'Listening...' : 'Enable Voice Control'}

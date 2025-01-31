@@ -18,13 +18,7 @@ function RewindIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
-export function RewindButton({
-  player,
-  amount = 10,
-}: {
-  player: PlayerAPI
-  amount?: number
-}) {
+export function RewindButton({ player, amount = 10 }: { player: PlayerAPI; amount?: number }) {
   return (
     <button
       type="button"

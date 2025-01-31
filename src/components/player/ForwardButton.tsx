@@ -9,12 +9,7 @@ function ForwardIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M13 15V19"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M13 15V19" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path
         d="M16 18V16C16 15.4477 16.4477 15 17 15H18C18.5523 15 19 15.4477 19 16V18C19 18.5523 18.5523 19 18 19H17C16.4477 19 16 18.5523 16 18Z"
         strokeWidth="1.5"
@@ -25,13 +20,7 @@ function ForwardIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
-export function ForwardButton({
-  player,
-  amount = 10,
-}: {
-  player: PlayerAPI
-  amount?: number
-}) {
+export function ForwardButton({ player, amount = 10 }: { player: PlayerAPI; amount?: number }) {
   return (
     <button
       type="button"
