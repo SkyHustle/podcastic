@@ -11,7 +11,8 @@ import { PlayIcon } from '@/components/PlayIcon'
 import { PodcastImage } from '@/lib/utils/image'
 import { TrendingLink } from '@/components/TrendingLink'
 import { supabase } from '@/lib/supabase'
-import { stripHtmlAndUrls, formatDescriptionWithLinks } from '@/lib/utils'
+import { formatDescriptionWithLinks } from '@/lib/utils'
+import { VoiceControl } from '@/components/VoiceControl'
 
 interface EpisodeWithPodcast extends AudioEpisode {
   podcast: {
@@ -105,6 +106,7 @@ export default async function Episode({ params }: { params: { id: string } }) {
                     className="order-first font-mono text-sm leading-7 text-slate-500"
                   />
                 </div>
+                <VoiceControl episode={episode} />
               </div>
               <p
                 className="ml-24 mt-3 text-sm font-medium leading-6 text-slate-700 sm:text-base sm:leading-7 md:text-lg md:leading-8"
