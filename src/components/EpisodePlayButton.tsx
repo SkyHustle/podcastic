@@ -1,7 +1,7 @@
 'use client'
 
 import { useAudioPlayer } from '@/components/AudioProvider'
-import type { Episode as AudioEpisode } from '@/components/AudioProvider'
+import { type Episode as AudioEpisode } from '@/components/AudioProvider'
 
 export function EpisodePlayButton({
   episode,

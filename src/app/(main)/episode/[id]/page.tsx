@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { Episode as AudioEpisode } from '@/components/AudioProvider'
 
 import { Container } from '@/components/Container'
 import { EpisodePlayButton } from '@/components/EpisodePlayButton'
@@ -12,15 +13,7 @@ import { TrendingLink } from '@/components/TrendingLink'
 import { supabase } from '@/lib/supabase'
 import { stripHtmlAndUrls, formatDescriptionWithLinks } from '@/lib/utils'
 
-interface Episode {
-  id: number
-  title: string
-  published: Date
-  description: string
-  audio: {
-    src: string
-    type: string
-  }
+interface EpisodeWithPodcast extends AudioEpisode {
   podcast: {
     id: number
     title: string
@@ -29,7 +22,7 @@ interface Episode {
   }
 }
 
-const getEpisode = cache(async (id: string): Promise<Episode> => {
+const getEpisode = cache(async (id: string): Promise<EpisodeWithPodcast> => {
   const { data: episode, error } = await supabase
     .from('episodes')
     .select(
@@ -51,10 +44,7 @@ const getEpisode = cache(async (id: string): Promise<Episode> => {
   }
 
   return {
-    id: episode.id,
-    title: episode.title,
-    published: new Date(episode.date_published),
-    description: episode.description,
+    ...episode,
     audio: {
       src: episode.enclosure_url,
       type: episode.enclosure_type,
@@ -73,7 +63,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
 export default async function Episode({ params }: { params: { id: string } }) {
   let episode = await getEpisode(params.id)
-  let date = episode.published
+  let date = new Date(episode.date_published)
 
   return (
     <div className="w-full">
