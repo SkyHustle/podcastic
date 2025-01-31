@@ -1,13 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import type {
-  TrendingPodcastsResponse,
-  PodcastSearchResponse,
-} from '@/lib/schemas'
+import type { TrendingPodcastsResponse, PodcastSearchResponse } from '@/lib/schemas'
 import { PodcastImage } from '@/lib/utils/image'
 
 interface SavedPodcast {
@@ -31,15 +26,10 @@ async function processPodcast(feed: TrendingPodcastsResponse['feeds'][0]) {
         feedId: feed.id.toString(),
       })}`,
     )
-    const podcastDetails =
-      (await detailsResponse.json()) as PodcastSearchResponse
+    const podcastDetails = (await detailsResponse.json()) as PodcastSearchResponse
 
     if ('error' in podcastDetails) {
-      throw new Error(
-        typeof podcastDetails.error === 'string'
-          ? podcastDetails.error
-          : 'Unknown error occurred',
-      )
+      throw new Error(typeof podcastDetails.error === 'string' ? podcastDetails.error : 'Unknown error occurred')
     }
 
     // Save podcast to database
@@ -112,11 +102,7 @@ export default function TrendingPage() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-red-500">
-          {error instanceof Error
-            ? error.message
-            : 'Failed to load trending podcasts'}
-        </p>
+        <p className="text-red-500">{error instanceof Error ? error.message : 'Failed to load trending podcasts'}</p>
       </div>
     )
   }
@@ -132,12 +118,8 @@ export default function TrendingPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl lg:max-w-none">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          Trending Podcasts
-        </h2>
-        <p className="text-md mt-2 leading-8 text-gray-600">
-          Discover what is popular right now in the podcast world.
-        </p>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl">Trending Podcasts</h2>
+        <p className="text-md mt-2 leading-8 text-gray-600">Discover what is popular right now in the podcast world.</p>
 
         <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4">
           {feeds.map((feed) => {

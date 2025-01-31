@@ -11,13 +11,12 @@ export const BaseMediaFields = {
   image: z.string().url(),
 }
 
+// Base podcast API response fields
 export const BasePodcastFields = {
   ...BaseMediaFields,
   author: z.string(),
   language: z.string(),
-  explicit: z
-    .union([z.boolean(), z.number()])
-    .transform((val) => (typeof val === 'number' ? Boolean(val) : val)),
+  explicit: z.union([z.boolean(), z.number()]).transform((val) => (typeof val === 'number' ? Boolean(val) : val)),
   categories: z.record(z.string(), z.string()).default({}),
 }
 
@@ -29,6 +28,5 @@ export type UnixTimestamp = number
 export const convertUnixToDateString = (timestamp: UnixTimestamp): DateString =>
   new Date(timestamp * 1000).toISOString()
 
-export const convertDateStringToUnix = (
-  dateString: DateString,
-): UnixTimestamp => Math.floor(new Date(dateString).getTime() / 1000)
+export const convertDateStringToUnix = (dateString: DateString): UnixTimestamp =>
+  Math.floor(new Date(dateString).getTime() / 1000)

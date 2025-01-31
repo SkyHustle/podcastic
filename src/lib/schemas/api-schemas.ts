@@ -1,5 +1,5 @@
 import { z } from 'zod'
-// import { BasePodcastFields, EpisodeType } from './common-types'
+import { BasePodcastFields } from './common-types'
 
 // Base API response schema
 const BaseApiResponse = {
@@ -7,23 +7,6 @@ const BaseApiResponse = {
   count: z.number(),
   description: z.string(),
   status_code: z.number().optional(),
-}
-
-// Base media fields
-export const BaseMediaFields = {
-  title: z.string(),
-  description: z.string(),
-  link: z.string().url().nullable(),
-  image: z.string().url(),
-}
-
-// Base podcast API response fields
-export const BasePodcastFields = {
-  ...BaseMediaFields,
-  author: z.string(),
-  language: z.string(),
-  explicit: z.union([z.boolean(), z.number()]).transform((val) => (typeof val === 'number' ? Boolean(val) : val)),
-  categories: z.record(z.string(), z.string()).default({}),
 }
 
 // Podcast feed from API

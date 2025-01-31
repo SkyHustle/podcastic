@@ -17,9 +17,7 @@ export function PodcastImage({ src, alt }: { src: string; alt: string }) {
       <div className="flex aspect-square h-full w-full items-center justify-center bg-gray-200 p-4 text-center text-sm text-gray-500">
         <div>
           <p>Image Unavailable</p>
-          <p className="mt-2 text-xs">
-            This podcast&apos;s artwork could not be loaded
-          </p>
+          <p className="mt-2 text-xs">This podcast&apos;s artwork could not be loaded</p>
         </div>
       </div>
     )
@@ -32,8 +30,9 @@ export function PodcastImage({ src, alt }: { src: string; alt: string }) {
       width={1024}
       height={1024}
       className="aspect-square h-full w-full object-cover"
-      loading="lazy"
+      // loading="lazy"
       onError={() => setError(true)}
+      priority={true}
     />
   )
 }
