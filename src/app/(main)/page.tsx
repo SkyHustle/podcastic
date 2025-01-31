@@ -10,5 +10,3 @@ export default function HomePage() {
     />
   )
 }
-
-export const revalidate = 10
