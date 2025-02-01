@@ -5,6 +5,8 @@ import { PlayIcon } from '@/components/PlayIcon'
 export function PlayButton({ player }: { player: PlayerAPI }) {
   let Icon = player.playing ? PauseIcon : PlayIcon
 
+  // console.log('Play Button Component', Icon.name)
+
   return (
     <button
       type="button"

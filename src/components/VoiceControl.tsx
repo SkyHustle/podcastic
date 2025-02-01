@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useAudioPlayer } from './AudioProvider'
+import { playbackRates } from './player/PlaybackRateButton'
 
 declare global {
   interface Window {
@@ -13,7 +14,7 @@ declare global {
 export function VoiceControl({ episode }: { episode: any }) {
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
-  const [currentRate, setCurrentRate] = useState(1)
+  const [playbackRate, setPlaybackRate] = useState(playbackRates[0])
   const player = useAudioPlayer(episode)
 
   const initializeRecognition = () => {
@@ -57,24 +58,33 @@ export function VoiceControl({ episode }: { episode: any }) {
         // Playback speed
         else if (transcript.includes('speed up') || transcript.includes('faster')) {
           console.log('Executing speed up command')
-          const rates = [1, 1.5, 2]
-          const currentIndex = rates.indexOf(currentRate)
-          const nextRate = rates[(currentIndex + 1) % rates.length]
-          console.log('Setting playback rate to:', nextRate)
-          player.playbackRate(nextRate)
-          setCurrentRate(nextRate)
+          console.log('Current playbackRate before update:', playbackRate)
+          const existingIdx = playbackRates.indexOf(playbackRate)
+          console.log('Current index:', existingIdx)
+          // Cycle to the next rate
+          const nextIdx = (existingIdx + 1) % playbackRates.length
+          const next = playbackRates[nextIdx]
+          console.log('Setting playback rate to:', next.value)
+          player.playbackRate(next.value)
+          setPlaybackRate(next)
+          console.log('Updated playbackRate:', next)
         } else if (transcript.includes('slow down') || transcript.includes('slower')) {
           console.log('Executing slow down command')
-          const rates = [1, 1.5, 2]
-          const currentIndex = rates.indexOf(currentRate)
-          const prevRate = rates[(currentIndex - 1 + rates.length) % rates.length]
-          console.log('Setting playback rate to:', prevRate)
-          player.playbackRate(prevRate)
-          setCurrentRate(prevRate)
+          console.log('Current playbackRate before update:', playbackRate)
+          const existingIdx = playbackRates.indexOf(playbackRate)
+          console.log('Current index:', existingIdx)
+          // Cycle to the previous rate
+          const prevIdx = (existingIdx - 1 + playbackRates.length) % playbackRates.length
+          const prev = playbackRates[prevIdx]
+          console.log('Setting playback rate to:', prev.value)
+          player.playbackRate(prev.value)
+          setPlaybackRate(prev)
+          console.log('Updated playbackRate:', prev)
         } else if (transcript.includes('normal speed')) {
           console.log('Executing normal speed command')
           player.playbackRate(1)
-          setCurrentRate(1)
+          setPlaybackRate(playbackRates[0])
+          console.log('Reset playbackRate to:', playbackRates[0])
         }
 
         // Volume control
@@ -88,7 +98,7 @@ export function VoiceControl({ episode }: { episode: any }) {
           }
         }
       } else {
-        console.log('Interim:', transcript)
+        // console.log('Interim:', transcript)
       }
     }
 

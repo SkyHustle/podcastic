@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { type PlayerAPI } from '@/components/AudioProvider'
 
-const playbackRates = [
+export const playbackRates = [
   {
     value: 1,
     icon: function PlaybackIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
