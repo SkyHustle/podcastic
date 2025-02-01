@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react'
-
 import { type PlayerAPI } from '@/components/AudioProvider'
 
 export const playbackRates = [
@@ -89,36 +87,28 @@ export const playbackRates = [
   },
 ]
 
-export function PlaybackRateButton({
-  player: { setPlaybackRate, playbackRate: currentRate },
-}: {
-  player: PlayerAPI
-}) {
-  let [playbackRate, setPlaybackRateState] = useState(
-    () => playbackRates.find((rate) => rate.value === currentRate) ?? playbackRates[0],
-  )
+export function PlaybackRateButton({ player }: { player: PlayerAPI }) {
+  // Derive the current rate directly from global state
+  const currentRate = player.playbackRate
+  const currentRateObj =
+    playbackRates.find((rate) => rate.value === currentRate) || playbackRates[0]
 
-  useEffect(() => {
-    if (playbackRate.value !== currentRate) {
-      setPlaybackRate(playbackRate.value)
-    }
-  }, [playbackRate.value, currentRate, setPlaybackRate])
+  const handleClick = () => {
+    const currentIndex = playbackRates.findIndex((rate) => rate.value === currentRate)
+    const nextIndex = (currentIndex + 1) % playbackRates.length
+    const nextRate = playbackRates[nextIndex].value
+    player.setPlaybackRate(nextRate)
+  }
 
   return (
     <button
       type="button"
       className="relative flex h-6 w-6 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-      onClick={() => {
-        setPlaybackRateState((rate) => {
-          let existingIdx = playbackRates.indexOf(rate)
-          let idx = (existingIdx + 1) % playbackRates.length
-          return playbackRates[idx]
-        })
-      }}
+      onClick={handleClick}
       aria-label="Playback rate"
     >
       <div className="absolute -inset-4 md:hidden" />
-      <playbackRate.icon className="h-4 w-4" />
+      <currentRateObj.icon className="h-4 w-4" />
     </button>
   )
 }
