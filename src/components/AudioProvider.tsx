@@ -17,6 +17,7 @@ interface PlayerState {
   duration: number
   currentTime: number
   episode: Episode | null
+  playbackRate: number
 }
 
 interface PublicPlayerActions {
@@ -25,7 +26,7 @@ interface PublicPlayerActions {
   toggle: (episode?: Episode) => void
   seekBy: (amount: number) => void
   seek: (time: number) => void
-  playbackRate: (rate: number) => void
+  setPlaybackRate: (rate: number) => void
   toggleMute: () => void
   isPlaying: (episode?: Episode) => boolean
 }
@@ -39,6 +40,7 @@ const enum ActionKind {
   TOGGLE_MUTE = 'TOGGLE_MUTE',
   SET_CURRENT_TIME = 'SET_CURRENT_TIME',
   SET_DURATION = 'SET_DURATION',
+  SET_PLAYBACK_RATE = 'SET_PLAYBACK_RATE',
 }
 
 type Action =
@@ -48,6 +50,7 @@ type Action =
   | { type: ActionKind.TOGGLE_MUTE }
   | { type: ActionKind.SET_CURRENT_TIME; payload: number }
   | { type: ActionKind.SET_DURATION; payload: number }
+  | { type: ActionKind.SET_PLAYBACK_RATE; payload: number }
 
 const AudioPlayerContext = createContext<PlayerAPI | null>(null)
 
@@ -65,6 +68,8 @@ function audioReducer(state: PlayerState, action: Action): PlayerState {
       return { ...state, currentTime: action.payload }
     case ActionKind.SET_DURATION:
       return { ...state, duration: action.payload }
+    case ActionKind.SET_PLAYBACK_RATE:
+      return { ...state, playbackRate: action.payload }
   }
 }
 
@@ -75,6 +80,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     duration: 0,
     currentTime: 0,
     episode: null,
+    playbackRate: 1,
   })
   let playerRef = useRef<React.ElementRef<'audio'>>(null)
 
@@ -112,21 +118,44 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           playerRef.current.currentTime = time
         }
       },
-      playbackRate(rate) {
+      setPlaybackRate(rate) {
         if (playerRef.current) {
           playerRef.current.playbackRate = rate
+          dispatch({ type: ActionKind.SET_PLAYBACK_RATE, payload: rate })
         }
       },
       toggleMute() {
         dispatch({ type: ActionKind.TOGGLE_MUTE })
       },
       isPlaying(episode) {
-        return episode ? state.playing && playerRef.current?.currentSrc === episode.audio.src : state.playing
+        return episode
+          ? state.playing && playerRef.current?.currentSrc === episode.audio.src
+          : state.playing
       },
     }
   }, [state.playing])
 
-  let api = useMemo<PlayerAPI>(() => ({ ...state, ...actions }), [state, actions])
+  // Separate stable state from frequently changing state
+  let stableState = useMemo(
+    () => ({
+      playing: state.playing,
+      muted: state.muted,
+      episode: state.episode,
+      playbackRate: state.playbackRate,
+    }),
+    [state.playing, state.muted, state.episode, state.playbackRate],
+  )
+
+  // Combine everything into the API
+  let api = useMemo<PlayerAPI>(
+    () => ({
+      ...stableState,
+      ...actions,
+      currentTime: state.currentTime,
+      duration: state.duration,
+    }),
+    [stableState, actions, state.currentTime, state.duration],
+  )
 
   return (
     <>

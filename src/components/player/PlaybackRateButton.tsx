@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import { type PlayerAPI } from '@/components/AudioProvider'
 
@@ -89,22 +89,30 @@ export const playbackRates = [
   },
 ]
 
-export function PlaybackRateButton({ player }: { player: PlayerAPI }) {
-  let [playbackRate, setPlaybackRate] = useState(playbackRates[0])
+export function PlaybackRateButton({
+  player: { setPlaybackRate, playbackRate: currentRate },
+}: {
+  player: PlayerAPI
+}) {
+  let [playbackRate, setPlaybackRateState] = useState(
+    () => playbackRates.find((rate) => rate.value === currentRate) ?? playbackRates[0],
+  )
+
+  useEffect(() => {
+    if (playbackRate.value !== currentRate) {
+      setPlaybackRate(playbackRate.value)
+    }
+  }, [playbackRate.value, currentRate, setPlaybackRate])
 
   return (
     <button
       type="button"
       className="relative flex h-6 w-6 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
       onClick={() => {
-        setPlaybackRate((rate) => {
+        setPlaybackRateState((rate) => {
           let existingIdx = playbackRates.indexOf(rate)
           let idx = (existingIdx + 1) % playbackRates.length
-          let next = playbackRates[idx]
-
-          player.playbackRate(next.value)
-
-          return next
+          return playbackRates[idx]
         })
       }}
       aria-label="Playback rate"
