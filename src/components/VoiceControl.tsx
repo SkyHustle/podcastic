@@ -55,37 +55,37 @@ export function VoiceControl({ episode }: { episode: any }) {
           player.seekBy(-10)
         }
 
-        // Playback speed
-        else if (transcript.includes('speed up') || transcript.includes('faster')) {
-          console.log('Executing speed up command')
-          console.log('Current playbackRate before update:', playbackRate)
-          const existingIdx = playbackRates.indexOf(playbackRate)
-          console.log('Current index:', existingIdx)
-          // Cycle to the next rate
-          const nextIdx = (existingIdx + 1) % playbackRates.length
-          const next = playbackRates[nextIdx]
-          console.log('Setting playback rate to:', next.value)
-          player.playbackRate(next.value)
-          setPlaybackRate(next)
-          console.log('Updated playbackRate:', next)
-        } else if (transcript.includes('slow down') || transcript.includes('slower')) {
-          console.log('Executing slow down command')
-          console.log('Current playbackRate before update:', playbackRate)
-          const existingIdx = playbackRates.indexOf(playbackRate)
-          console.log('Current index:', existingIdx)
-          // Cycle to the previous rate
-          const prevIdx = (existingIdx - 1 + playbackRates.length) % playbackRates.length
-          const prev = playbackRates[prevIdx]
-          console.log('Setting playback rate to:', prev.value)
-          player.playbackRate(prev.value)
-          setPlaybackRate(prev)
-          console.log('Updated playbackRate:', prev)
-        } else if (transcript.includes('normal speed')) {
-          console.log('Executing normal speed command')
-          player.playbackRate(1)
-          setPlaybackRate(playbackRates[0])
-          console.log('Reset playbackRate to:', playbackRates[0])
-        }
+        // // Playback speed
+        // else if (transcript.includes('speed up') || transcript.includes('faster')) {
+        //   console.log('Executing speed up command')
+        //   console.log('Current playbackRate before update:', playbackRate)
+        //   const existingIdx = playbackRates.indexOf(playbackRate)
+        //   console.log('Current index:', existingIdx)
+        //   // Cycle to the next rate
+        //   const nextIdx = (existingIdx + 1) % playbackRates.length
+        //   const next = playbackRates[nextIdx]
+        //   console.log('Setting playback rate to:', next.value)
+        //   player.playbackRate(next.value)
+        //   setPlaybackRate(next)
+        //   console.log('Updated playbackRate:', next)
+        // } else if (transcript.includes('slow down') || transcript.includes('slower')) {
+        //   console.log('Executing slow down command')
+        //   console.log('Current playbackRate before update:', playbackRate)
+        //   const existingIdx = playbackRates.indexOf(playbackRate)
+        //   console.log('Current index:', existingIdx)
+        //   // Cycle to the previous rate
+        //   const prevIdx = (existingIdx - 1 + playbackRates.length) % playbackRates.length
+        //   const prev = playbackRates[prevIdx]
+        //   console.log('Setting playback rate to:', prev.value)
+        //   player.playbackRate(prev.value)
+        //   setPlaybackRate(prev)
+        //   console.log('Updated playbackRate:', prev)
+        // } else if (transcript.includes('normal speed')) {
+        //   console.log('Executing normal speed command')
+        //   player.playbackRate(1)
+        //   setPlaybackRate(playbackRates[0])
+        //   console.log('Reset playbackRate to:', playbackRates[0])
+        // }
 
         // Volume control
         else if (transcript.includes('mute')) {
@@ -111,9 +111,14 @@ export function VoiceControl({ episode }: { episode: any }) {
     }
 
     recognition.onend = () => {
-      console.log('Recognition ended, restarting...')
+      console.log('Recognition ended')
+      // Only restart if we're still meant to be listening
       if (isListening) {
+        console.log('Restarting recognition...')
         restartRecognition()
+      } else {
+        // If we're not meant to be listening anymore, update the state
+        setIsListening(false)
       }
     }
 
