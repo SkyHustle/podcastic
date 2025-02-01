@@ -95,9 +95,13 @@ export function PlaybackRateButton({ player }: { player: PlayerAPI }) {
 
   const handleClick = () => {
     const currentIndex = playbackRates.findIndex((rate) => rate.value === currentRate)
-    const nextIndex = (currentIndex + 1) % playbackRates.length
-    const nextRate = playbackRates[nextIndex].value
-    player.setPlaybackRate(nextRate)
+    // If current rate not found or at max speed, start from beginning
+    if (currentIndex === -1 || currentIndex === playbackRates.length - 1) {
+      player.setPlaybackRate(playbackRates[0].value)
+    } else {
+      // Otherwise, go to next speed
+      player.setPlaybackRate(playbackRates[currentIndex + 1].value)
+    }
   }
 
   return (

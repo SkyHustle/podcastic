@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAudioPlayer } from './AudioProvider'
 import { playbackRates } from './player/PlaybackRateButton'
 
@@ -14,7 +14,6 @@ declare global {
 export function VoiceControl({ episode }: { episode: any }) {
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
-  const [playbackRate, setPlaybackRate] = useState(playbackRates[0])
   const player = useAudioPlayer(episode)
 
   const initializeRecognition = () => {
@@ -29,7 +28,6 @@ export function VoiceControl({ episode }: { episode: any }) {
     recognition.interimResults = true
     recognition.lang = 'en-US'
 
-    // Log both interim and final results
     recognition.onresult = (event: any) => {
       const result = event.results[event.results.length - 1]
       const transcript = result[0].transcript.toLowerCase().trim()
@@ -37,30 +35,27 @@ export function VoiceControl({ episode }: { episode: any }) {
       if (result.isFinal) {
         console.log('Final:', transcript, '(Confidence:', result[0].confidence, ')')
 
-        // Playback controls
         if (transcript.includes('play')) {
           console.log('Executing play command')
           player.play()
         } else if (transcript.includes('pause') || transcript.includes('stop')) {
           console.log('Executing pause command')
           player.pause()
-        }
-
-        // Forward/Rewind
-        else if (transcript.includes('forward') || transcript.includes('skip forward')) {
+        } else if (transcript.includes('forward') || transcript.includes('skip forward')) {
           console.log('Executing forward command')
           player.seekBy(10)
         } else if (transcript.includes('rewind') || transcript.includes('go back')) {
           console.log('Executing rewind command')
           player.seekBy(-10)
-        }
-
-        // Playback speed
-        else if (transcript.includes('speed up') || transcript.includes('faster')) {
+        } else if (transcript.includes('speed up') || transcript.includes('faster')) {
           console.log('Executing speed up command')
           const currentRate = player.playbackRate
           const currentIndex = playbackRates.findIndex((rate) => rate.value === currentRate)
-          const nextIndex = (currentIndex + 1) % playbackRates.length
+          if (currentIndex === playbackRates.length - 1) {
+            console.log('Already at maximum speed')
+            return
+          }
+          const nextIndex = currentIndex === -1 ? 0 : currentIndex + 1
           const nextRate = playbackRates[nextIndex].value
           console.log('Setting playback rate to:', nextRate)
           player.setPlaybackRate(nextRate)
@@ -68,17 +63,17 @@ export function VoiceControl({ episode }: { episode: any }) {
           console.log('Executing slow down command')
           const currentRate = player.playbackRate
           const currentIndex = playbackRates.findIndex((rate) => rate.value === currentRate)
-          const prevIndex = (currentIndex - 1 + playbackRates.length) % playbackRates.length
-          const prevRate = playbackRates[prevIndex].value
+          if (currentIndex === 0 || currentIndex === -1) {
+            console.log('Already at minimum speed')
+            return
+          }
+          const prevRate = playbackRates[currentIndex - 1].value
           console.log('Setting playback rate to:', prevRate)
           player.setPlaybackRate(prevRate)
         } else if (transcript.includes('normal speed')) {
           console.log('Executing normal speed command')
-          player.setPlaybackRate(1)
-        }
-
-        // Volume control
-        else if (transcript.includes('mute')) {
+          player.setPlaybackRate(playbackRates[0].value)
+        } else if (transcript.includes('mute')) {
           console.log('Executing mute command')
           player.toggleMute()
         } else if (transcript.includes('unmute')) {
@@ -87,14 +82,11 @@ export function VoiceControl({ episode }: { episode: any }) {
             player.toggleMute()
           }
         }
-      } else {
-        // console.log('Interim:', transcript)
       }
     }
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error)
-      // Only restart on non-abort errors
       if (event.error !== 'aborted' && isListening) {
         restartRecognition()
       }
@@ -102,12 +94,10 @@ export function VoiceControl({ episode }: { episode: any }) {
 
     recognition.onend = () => {
       console.log('Recognition ended')
-      // Only restart if we're still meant to be listening
       if (isListening) {
         console.log('Restarting recognition...')
         restartRecognition()
       } else {
-        // If we're not meant to be listening anymore, update the state
         setIsListening(false)
       }
     }
