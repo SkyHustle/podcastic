@@ -16,6 +16,12 @@ export function VoiceControl({ episode }: { episode: any }) {
   const recognitionRef = useRef<any>(null)
   const player = useAudioPlayer(episode)
 
+  // Ensure the latest player is used
+  const latestPlayerRef = useRef(player)
+  useEffect(() => {
+    latestPlayerRef.current = player
+  }, [player])
+
   const initializeRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
@@ -49,7 +55,7 @@ export function VoiceControl({ episode }: { episode: any }) {
           player.seekBy(-10)
         } else if (transcript.includes('speed up') || transcript.includes('faster')) {
           console.log('Executing speed up command')
-          const currentRate = player.playbackRate
+          const currentRate = latestPlayerRef.current.playbackRate
           const currentIndex = playbackRates.findIndex((rate) => rate.value === currentRate)
           if (currentIndex === playbackRates.length - 1) {
             console.log('Already at maximum speed')
@@ -61,7 +67,7 @@ export function VoiceControl({ episode }: { episode: any }) {
           player.setPlaybackRate(nextRate)
         } else if (transcript.includes('slow down') || transcript.includes('slower')) {
           console.log('Executing slow down command')
-          const currentRate = player.playbackRate
+          const currentRate = latestPlayerRef.current.playbackRate
           const currentIndex = playbackRates.findIndex((rate) => rate.value === currentRate)
           if (currentIndex === 0 || currentIndex === -1) {
             console.log('Already at minimum speed')
