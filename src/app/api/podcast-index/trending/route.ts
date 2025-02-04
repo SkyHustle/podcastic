@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const response = await fetch(
       'https://api.podcastindex.org/api/1.0/podcasts/trending?' +
         new URLSearchParams({
-          max: '12',
+          max: '20',
           lang: 'en',
           cat: '9,11,12,102,112',
           pretty: 'true',
@@ -42,11 +42,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json()
-    console.log(
-      chalk.blue(
-        `Fetched trending podcasts in ${Date.now() - trendingStart}ms`,
-      ),
-    )
+    console.log(chalk.blue(`Fetched trending podcasts in ${Date.now() - trendingStart}ms`))
 
     data.feeds?.forEach((feed: any, index: number) => {
       console.log(chalk.green(`${index + 1}. ${feed.title} by ${feed.author}`))
@@ -56,14 +52,8 @@ export async function GET(request: Request) {
     const validated = TrendingPodcastsResponseSchema.safeParse(data)
 
     if (!validated.success) {
-      console.error(
-        'Validation errors:',
-        JSON.stringify(validated.error.errors, null, 2),
-      )
-      return NextResponse.json(
-        { error: validated.error.errors },
-        { status: 400 },
-      )
+      console.error('Validation errors:', JSON.stringify(validated.error.errors, null, 2))
+      return NextResponse.json({ error: validated.error.errors }, { status: 400 })
     }
 
     return NextResponse.json(validated.data)
