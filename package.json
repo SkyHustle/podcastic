@@ -16,6 +16,8 @@
     "@types/node": "^20.10.8",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.4",
     "autoprefixer": "^10.4.12",
     "clsx": "^2.1.0",
     "isomorphic-dompurify": "^2.20.0",
