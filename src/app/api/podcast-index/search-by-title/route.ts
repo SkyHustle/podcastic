@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
-import { PodcastSearchResponseSchema } from '@/lib/schemas'
+import { PodcastSearchResponseSchema } from '@/lib/schemas/api-schemas'
 
 export async function GET(request: Request) {
   try {
