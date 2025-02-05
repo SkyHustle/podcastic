@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import chalk from 'chalk'
-import type { TrendingPodcastInsert } from '@/lib/schemas'
+import type { TrendingPodcastInsert } from '@/lib/schemas/db-schemas'
 
 export async function POST(request: Request) {
   try {
@@ -9,17 +9,11 @@ export async function POST(request: Request) {
     const start = Date.now()
 
     // Step 1: Delete all existing trending podcasts
-    const { error: deleteError } = await supabase
-      .from('trending_podcasts')
-      .delete()
-      .neq('id', 0) // Dummy condition to delete all rows
+    const { error: deleteError } = await supabase.from('trending_podcasts').delete().neq('id', 0) // Dummy condition to delete all rows
 
     if (deleteError) {
       console.error('Failed to clear trending podcasts:', deleteError)
-      return NextResponse.json(
-        { error: 'Failed to clear trending podcasts' },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: 'Failed to clear trending podcasts' }, { status: 500 })
     }
 
     // Step 2: Save each trending podcast
@@ -31,28 +25,18 @@ export async function POST(request: Request) {
       }),
     )
 
-    const { error: insertError } = await supabase
-      .from('trending_podcasts')
-      .insert(trendingToInsert)
+    const { error: insertError } = await supabase.from('trending_podcasts').insert(trendingToInsert)
 
     if (insertError) {
       console.error('Failed to insert trending podcasts:', insertError)
-      return NextResponse.json(
-        { error: 'Failed to insert trending podcasts' },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: 'Failed to insert trending podcasts' }, { status: 500 })
     }
 
     console.log(
-      chalk.green(
-        `Saved ${trendingToInsert.length} trending podcasts in ${Date.now() - start}ms`,
-      ),
+      chalk.green(`Saved ${trendingToInsert.length} trending podcasts in ${Date.now() - start}ms`),
     )
 
-    return NextResponse.json(
-      { message: 'Trending podcasts updated successfully' },
-      { status: 200 },
-    )
+    return NextResponse.json({ message: 'Trending podcasts updated successfully' }, { status: 200 })
   } catch (error) {
     console.error('Error saving trending podcasts:', error)
     return NextResponse.json(
