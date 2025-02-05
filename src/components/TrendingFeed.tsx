@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import type { TrendingPodcastsResponse, PodcastSearchResponse } from '@/lib/schemas'
 import { PodcastImage } from '@/lib/utils/image'
+import Spinner from './Spinner'
 
 interface SavedPodcast {
   id: number
@@ -114,7 +115,7 @@ export function TrendingFeed({
   if (isLoadingFeeds) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p>Loading...</p>
+        <Spinner className="h-8 w-8" />
       </div>
     )
   }

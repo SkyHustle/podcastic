@@ -9,6 +9,7 @@ import React from 'react'
 import { Episode } from '@/components/Episode'
 import { formatEpisode } from '@/lib/utils/episode'
 import { TrendingLink } from '@/components/TrendingLink'
+import Spinner from '@/components/Spinner'
 
 async function fetchPodcast(id: number) {
   const response = await fetch(
@@ -114,7 +115,7 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
   if (isPodcastLoading || !podcast) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p>Loading...</p>
+        <Spinner className="h-8 w-8" />
       </div>
     )
   }
@@ -154,7 +155,7 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
           <div className="divide-y divide-slate-100 sm:mt-4 lg:mt-8 lg:border-t lg:border-slate-100">
             {isLoading ? (
               <div className="flex justify-center py-10">
-                <p>Loading episodes...</p>
+                <Spinner />
               </div>
             ) : error ? (
               <div className="flex justify-center py-10">
