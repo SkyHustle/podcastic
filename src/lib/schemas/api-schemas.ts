@@ -73,15 +73,15 @@ export const PodcastEpisodeSchema = z.object({
   value: z.unknown().optional(),
 })
 
-// // API Response Schemas
-// export const PodcastSearchResponseSchema = z.object({
-//   ...BaseApiResponse,
-//   feeds: z.array(
-//     PodcastRe.extend({
-//       podcastGuid: z.string(),
-//     }),
-//   ),
-// })
+// API Response Schemas
+export const PodcastSearchResponseSchema = z.object({
+  ...BaseApiResponse,
+  feeds: z.array(
+    PodcastResponseSchema.extend({
+      podcastGuid: z.string(),
+    }),
+  ),
+})
 
 // Trending podcast from API
 export const TrendingPodcastSchema = z.object({
@@ -110,8 +110,8 @@ export const PodcastEpisodesResponseSchema = z.object({
 })
 
 // // Derived types
-// export type PodcastFeed = z.infer<typeof PodcastRe>
-// export type PodcastEpisode = z.infer<typeof PodcastEpisodeSchema>
-export type PodcastSearchResponse = z.infer<typeof PodcastResponseSchema>
+export type PodcastFeed = z.infer<typeof PodcastResponseSchema>
+export type PodcastEpisode = z.infer<typeof PodcastEpisodeSchema>
+export type PodcastSearchResponse = z.infer<typeof PodcastSearchResponseSchema>
 export type TrendingPodcastsResponse = z.infer<typeof TrendingPodcastsResponseSchema>
 export type PodcastEpisodesResponse = z.infer<typeof PodcastEpisodesResponseSchema>

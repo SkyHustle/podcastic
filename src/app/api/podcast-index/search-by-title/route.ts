@@ -9,10 +9,7 @@ export async function GET(request: Request) {
     const title = searchParams.get('title')
 
     if (!title) {
-      return NextResponse.json(
-        { error: 'Title parameter is required' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: 'Title parameter is required' }, { status: 400 })
     }
 
     const apiKey = process.env.PODCAST_INDEX_API_KEY?.trim()
@@ -51,14 +48,8 @@ export async function GET(request: Request) {
     const validated = PodcastSearchResponseSchema.safeParse(data)
 
     if (!validated.success) {
-      console.error(
-        'Validation errors:',
-        JSON.stringify(validated.error.errors, null, 2),
-      )
-      return NextResponse.json(
-        { error: validated.error.errors },
-        { status: 400 },
-      )
+      console.error('Validation errors:', JSON.stringify(validated.error.errors, null, 2))
+      return NextResponse.json({ error: validated.error.errors }, { status: 400 })
     }
 
     if (validated.data.feeds.length === 0) {
