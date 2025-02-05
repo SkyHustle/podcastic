@@ -10,6 +10,7 @@ const ratelimit = new Ratelimit({
   analytics: true,
 })
 
+// Rate limiting middleware
 export async function middleware(request: NextRequest) {
   // Only apply rate limiting to API routes
   if (request.nextUrl.pathname.startsWith('/api')) {
