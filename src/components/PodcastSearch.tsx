@@ -173,7 +173,11 @@ export function PodcastSearch() {
             ))}
           </datalist>
         </div>
-        <Button type="submit" variant="secondary" disabled={isLoading} className="shrink-0">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="shrink-0 rounded-md bg-pink-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-pink-600 active:bg-pink-700"
+        >
           {isLoading ? 'Searching...' : 'Search'}
         </Button>
       </form>
