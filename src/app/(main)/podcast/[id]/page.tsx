@@ -5,7 +5,7 @@ import type { PodcastEpisodesResponse } from '@/lib/schemas/api-schemas'
 import type { Podcast } from '@/lib/schemas/db-schemas'
 import type { Episode as EpisodeType } from '@/lib/schemas/db-schemas'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { PodcastImage } from '@/lib/utils/image'
 import { Episode } from '@/components/Episode'
@@ -131,16 +131,22 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
     },
   })
 
+  const [isSavingAndRefetching, setIsSavingAndRefetching] = useState(false)
+
   // When we get episodes from Podcast Index, save them to our database
   useEffect(() => {
     async function saveAndRefetchEpisodes() {
       if (podcastIndexEpisodes && podcast?.id && !dbEpisodes?.length) {
-        await saveEpisodesMutation({
-          episodes: podcastIndexEpisodes,
-          podcast_id: podcast.id,
-        })
-        // Refetch db episodes after saving to ensure we have the latest data
-        await refetchDbEpisodes()
+        setIsSavingAndRefetching(true)
+        try {
+          await saveEpisodesMutation({
+            episodes: podcastIndexEpisodes,
+            podcast_id: podcast.id,
+          })
+          await refetchDbEpisodes()
+        } finally {
+          setIsSavingAndRefetching(false)
+        }
       }
     }
 
@@ -165,7 +171,11 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
     )
   }
 
-  const isLoading = isPodcastIndexEpisodesLoading || isSavingEpisodes || isDbEpisodesLoading
+  const isLoading =
+    isPodcastIndexEpisodesLoading ||
+    isSavingEpisodes ||
+    isDbEpisodesLoading ||
+    isSavingAndRefetching
 
   return (
     <div className="w-full">
@@ -214,6 +224,10 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
               dbEpisodes.map((episode) => (
                 <Episode key={episode.id} episode={formatEpisode(episode)} />
               ))
+            ) : podcastIndexEpisodes ? (
+              <div className="flex justify-center py-10">
+                <Spinner />
+              </div>
             ) : (
               <div className="flex justify-center py-10">
                 <p>No episodes found</p>
