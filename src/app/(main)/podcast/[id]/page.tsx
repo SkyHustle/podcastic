@@ -4,10 +4,10 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import type { PodcastEpisodesResponse } from '@/lib/schemas/api-schemas'
 import type { Podcast } from '@/lib/schemas/db-schemas'
 import type { Episode as EpisodeType } from '@/lib/schemas/db-schemas'
-
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { PodcastImage } from '@/lib/utils/image'
-import React from 'react'
 import { Episode } from '@/components/Episode'
 import { formatEpisode } from '@/lib/utils/episode'
 import { TrendingLink } from '@/components/TrendingLink'
@@ -64,6 +64,21 @@ async function saveEpisodes(episodes: PodcastEpisodesResponse, podcast_id: numbe
   return data as EpisodeType[]
 }
 
+async function fetchSavedEpisodes(podcast_id: number) {
+  const response = await fetch(
+    `/api/supabase/fetch-episodes?${new URLSearchParams({
+      podcast_id: podcast_id.toString(),
+    })}`,
+  )
+  const data = await response.json()
+
+  if ('error' in data) {
+    throw new Error(data.error)
+  }
+
+  return data as EpisodeType[]
+}
+
 export default function PodcastPage({ params }: { params: { id: number } }) {
   const {
     data: podcast,
@@ -72,6 +87,8 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
   } = useQuery({
     queryKey: ['podcast', params.id],
     queryFn: () => fetchPodcast(params.id),
+    staleTime: 1000 * 60 * 60 * 12, // 12 hours
+    gcTime: 1000 * 60 * 60 * 15, // 15 hours
   })
 
   const {
@@ -82,6 +99,18 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
     queryKey: ['podcastIndexEpisodes', podcast?.feed_id],
     queryFn: () => fetchEpisodes(podcast?.feed_id ?? 0),
     enabled: !!podcast?.feed_id,
+    staleTime: 1000 * 60 * 60 * 12, // 12 hours
+    gcTime: 1000 * 60 * 60 * 15, // 15 hours
+  })
+
+  const queryClient = useQueryClient()
+
+  const { data: dbEpisodes, isLoading: isDbEpisodesLoading } = useQuery({
+    queryKey: ['saved-episodes', params.id],
+    queryFn: () => fetchSavedEpisodes(params.id),
+    staleTime: 1000 * 60 * 60 * 12, // 12 hours
+    gcTime: 1000 * 60 * 60 * 15, // 15 hours
+    enabled: !!podcast?.id,
   })
 
   const {
@@ -92,17 +121,23 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
   } = useMutation({
     mutationFn: (data: { episodes: PodcastEpisodesResponse; podcast_id: number }) =>
       saveEpisodes(data.episodes, data.podcast_id),
+    onSuccess: (data, variables) => {
+      // Update the saved episodes cache with the new data
+      if (podcast?.id) {
+        queryClient.setQueryData(['saved-episodes', podcast.id], data)
+      }
+    },
   })
 
   // When we get episodes from Podcast Index, save them to our database
-  React.useEffect(() => {
-    if (podcastIndexEpisodes && podcast?.id) {
+  useEffect(() => {
+    if (podcastIndexEpisodes && podcast?.id && !dbEpisodes?.length) {
       saveEpisodesMutation({
         episodes: podcastIndexEpisodes,
         podcast_id: podcast.id,
       })
     }
-  }, [podcastIndexEpisodes, podcast?.id, saveEpisodesMutation])
+  }, [podcastIndexEpisodes, podcast?.id, saveEpisodesMutation, dbEpisodes])
 
   if (podcastError) {
     return (
@@ -122,8 +157,7 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
     )
   }
 
-  const isLoading = isPodcastIndexEpisodesLoading || isSavingEpisodes
-  const error = podcastIndexEpisodesError || saveEpisodesError
+  const isLoading = isPodcastIndexEpisodesLoading || isSavingEpisodes || isDbEpisodesLoading
 
   return (
     <div className="w-full">
@@ -159,14 +193,17 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
               <div className="flex justify-center py-10">
                 <Spinner />
               </div>
-            ) : error ? (
+            ) : saveEpisodesError || podcastIndexEpisodesError ? (
               <div className="flex justify-center py-10">
                 <p className="text-red-500">
-                  {error instanceof Error ? error.message : 'Failed to load episodes'}
+                  {saveEpisodesError || podcastIndexEpisodesError
+                    ? (saveEpisodesError || podcastIndexEpisodesError)?.message ||
+                      'Failed to load episodes'
+                    : 'Failed to load episodes'}
                 </p>
               </div>
-            ) : savedEpisodes && savedEpisodes.length > 0 ? (
-              savedEpisodes.map((episode) => (
+            ) : dbEpisodes && dbEpisodes.length > 0 ? (
+              dbEpisodes.map((episode) => (
                 <Episode key={episode.id} episode={formatEpisode(episode)} />
               ))
             ) : (
