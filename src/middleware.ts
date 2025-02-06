@@ -6,7 +6,7 @@ import { Redis } from '@upstash/redis'
 // Create a new ratelimiter, that allows 50 requests per 30 seconds
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(50, '30 s'),
+  limiter: Ratelimit.slidingWindow(100, '30 s'),
   analytics: true,
 })
 
