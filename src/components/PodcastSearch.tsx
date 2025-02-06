@@ -3,13 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Button } from './Button'
 import { useRouter } from 'next/navigation'
+import { useMutation } from '@tanstack/react-query'
 
 export function PodcastSearch() {
   const [title, setTitle] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [status, setStatus] = useState<string>('')
   const [searchHistory, setSearchHistory] = useState<string[]>([])
   const router = useRouter()
 
@@ -21,19 +18,6 @@ export function PodcastSearch() {
     }
   }, [])
 
-  // Clear messages after 3 seconds
-  useEffect(() => {
-    if (status || error || success) {
-      const timer = setTimeout(() => {
-        setStatus('')
-        setError(null)
-        setSuccess(null)
-      }, 3000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [status, error, success])
-
   // Save successful search to history
   const addToHistory = (query: string) => {
     const newHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 5)
@@ -41,26 +25,13 @@ export function PodcastSearch() {
     localStorage.setItem('podcastSearchHistory', JSON.stringify(newHistory))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmedTitle = title.trim()
-
-    // Validate minimum length
-    if (trimmedTitle.length < 3) {
-      setError('Please enter at least 3 characters')
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-    setSuccess(null)
-    setStatus('Searching for podcast...')
-
-    try {
-      // Step 1: Search by title
+  // Search and save podcast mutation
+  const searchAndSaveMutation = useMutation({
+    mutationFn: async (searchTitle: string) => {
+      // Step 1: Search by title in Podcast Index
       const searchResponse = await fetch(
         `/api/podcast-index/search-by-title?${new URLSearchParams({
-          title: trimmedTitle,
+          title: searchTitle,
         })}`,
       )
       const searchData = await searchResponse.json()
@@ -74,9 +45,8 @@ export function PodcastSearch() {
       }
 
       const feedId = searchData.feeds[0].id.toString()
-      setStatus('Found podcast, fetching details...')
 
-      // Step 2: Get complete podcast details
+      // Step 2: Get complete podcast details from Podcast Index
       const detailsResponse = await fetch(
         `/api/podcast-index/by-feed-id?${new URLSearchParams({
           feedId,
@@ -88,23 +58,7 @@ export function PodcastSearch() {
         throw new Error(podcastDetails.error)
       }
 
-      setStatus('Fetching latest episodes...')
-
-      // Step 3: Get latest episodes
-      const episodesResponse = await fetch(
-        `/api/podcast-index/episodes?${new URLSearchParams({
-          feedId,
-        })}`,
-      )
-      const episodesData = await episodesResponse.json()
-
-      if (episodesData.error) {
-        throw new Error(episodesData.error)
-      }
-
-      setStatus('Saving to database...')
-
-      // Step 4: Save everything to database
+      // Step 3: Try to save to database (or get existing)
       const saveResponse = await fetch('/api/supabase/add-podcast', {
         method: 'POST',
         headers: {
@@ -112,39 +66,46 @@ export function PodcastSearch() {
         },
         body: JSON.stringify({
           podcast: podcastDetails,
-          episodes: episodesData.items,
         }),
       })
 
-      const saveData = await saveResponse.json()
+      const savedData = await saveResponse.json()
 
-      if (saveData.error) {
-        throw new Error(saveData.error)
+      if (savedData.error) {
+        throw new Error(savedData.error)
       }
 
-      // Add successful search to history
-      addToHistory(trimmedTitle)
-
-      // Clear input on success
-      setTitle('')
-      setStatus('')
-
-      // Show appropriate success message
-      if (saveData.source === 'database') {
-        setSuccess(`Found "${saveData.podcast.title}" in database`)
+      return savedData
+    },
+    onSuccess: (data) => {
+      // Log whether the podcast was newly saved or already existed
+      if (data.source === 'database') {
+        console.log(`Found "${data.podcast.title}" in database`)
       } else {
-        setSuccess(`Added "${saveData.podcast.title}" to database`)
+        console.log(`Added "${data.podcast.title}" to database`)
       }
 
-      // Navigate to show the found/added podcast
-      router.push(`/?podcast=${saveData.podcast.id}`)
+      // Navigate to the podcast page using the database ID
+      router.push(`/podcast/${data.podcast.id}`)
       router.refresh()
+    },
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedTitle = title.trim()
+
+    // Validate minimum length
+    if (trimmedTitle.length < 3) {
+      return
+    }
+
+    try {
+      await searchAndSaveMutation.mutateAsync(trimmedTitle)
+      addToHistory(trimmedTitle)
+      setTitle('')
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch podcast')
       console.error('Error:', error)
-    } finally {
-      setIsLoading(false)
-      setStatus('')
     }
   }
 
@@ -155,14 +116,10 @@ export function PodcastSearch() {
           <input
             type="text"
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value)
-              setError(null)
-              setSuccess(null)
-            }}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Search by podcast title"
             className="w-full rounded-md border-0 bg-white/5 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
-            disabled={isLoading}
+            disabled={searchAndSaveMutation.isPending}
             minLength={3}
             required
             list="podcast-search-history"
@@ -175,29 +132,19 @@ export function PodcastSearch() {
         </div>
         <Button
           type="submit"
-          disabled={isLoading}
+          disabled={searchAndSaveMutation.isPending}
           className="shrink-0 rounded-md bg-pink-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-pink-600 active:bg-pink-700"
         >
-          {isLoading ? 'Searching...' : 'Search'}
+          {searchAndSaveMutation.isPending ? 'Searching...' : 'Search'}
         </Button>
       </form>
-      {(status || error || success) && (
+      {searchAndSaveMutation.error && (
         <div className="mt-1">
-          {status && (
-            <p className="text-xs text-slate-400" role="status">
-              {status}
-            </p>
-          )}
-          {error && (
-            <p className="text-xs text-red-500" role="alert">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="text-xs text-green-600" role="status">
-              {success}
-            </p>
-          )}
+          <p className="text-xs text-red-500" role="alert">
+            {searchAndSaveMutation.error instanceof Error
+              ? searchAndSaveMutation.error.message
+              : 'An error occurred'}
+          </p>
         </div>
       )}
     </div>
