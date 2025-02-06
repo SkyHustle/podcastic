@@ -74,14 +74,16 @@ export function TrendingFeed({}: TrendingFeedProps) {
   } = useQuery({
     queryKey: ['trending-podcasts'],
     queryFn: fetchTrendingPodcasts,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 45, // 45 minutes
   })
 
   const podcastQueries = useQueries({
     queries: feeds.map((feed) => ({
       queryKey: ['podcast-processed', feed.id],
       queryFn: () => processPodcast(feed),
-      staleTime: 1000 * 60 * 15,
-      gcTime: 1000 * 60 * 30,
+      staleTime: 1000 * 60 * 30, // 30 minutes
+      gcTime: 1000 * 60 * 45, // 45 minutes
       retry: false,
     })),
   })
