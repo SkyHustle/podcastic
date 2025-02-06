@@ -64,15 +64,9 @@ async function processPodcast(feed: TrendingPodcastsResponse['feeds'][0]) {
   }
 }
 
-interface TrendingFeedProps {
-  title?: string
-  description?: string
-}
+interface TrendingFeedProps {}
 
-export function TrendingFeed({
-  title = 'Trending Podcasts',
-  description = 'Discover what is popular right now in the podcast world.',
-}: TrendingFeedProps) {
+export function TrendingFeed({}: TrendingFeedProps) {
   const {
     data: feeds = [],
     isLoading: isLoadingFeeds,
@@ -123,10 +117,7 @@ export function TrendingFeed({
   return (
     <div className="mx-auto max-w-7xl overflow-hidden px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl lg:max-w-none">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl">{title}</h2>
-        <p className="text-md mt-2 leading-8 text-gray-600">{description}</p>
-
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8 xl:grid-cols-4">
           {feeds.map((feed) => {
             const savedPodcast = savedPodcasts[feed.id]
             return (

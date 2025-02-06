@@ -36,10 +36,7 @@ export function PodcastSearch() {
 
   // Save successful search to history
   const addToHistory = (query: string) => {
-    const newHistory = [
-      query,
-      ...searchHistory.filter((item) => item !== query),
-    ].slice(0, 5)
+    const newHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 5)
     setSearchHistory(newHistory)
     localStorage.setItem('podcastSearchHistory', JSON.stringify(newHistory))
   }
@@ -143,9 +140,7 @@ export function PodcastSearch() {
       router.push(`/?podcast=${saveData.podcast.id}`)
       router.refresh()
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'Failed to fetch podcast',
-      )
+      setError(error instanceof Error ? error.message : 'Failed to fetch podcast')
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
@@ -154,7 +149,7 @@ export function PodcastSearch() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-2">
+    <div className="w-full">
       <form className="flex items-center gap-2" onSubmit={handleSubmit}>
         <div className="min-w-0 flex-1">
           <input
@@ -166,7 +161,7 @@ export function PodcastSearch() {
               setSuccess(null)
             }}
             placeholder="Search by podcast title"
-            className="w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
+            className="w-full rounded-md border-0 bg-white/5 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-600 disabled:opacity-50"
             disabled={isLoading}
             minLength={3}
             required
@@ -178,29 +173,28 @@ export function PodcastSearch() {
             ))}
           </datalist>
         </div>
-        <Button
-          type="submit"
-          variant="secondary"
-          disabled={isLoading}
-          className="shrink-0"
-        >
+        <Button type="submit" variant="secondary" disabled={isLoading} className="shrink-0">
           {isLoading ? 'Searching...' : 'Search'}
         </Button>
       </form>
-      {status && (
-        <p className="text-sm text-slate-400" role="status">
-          {status}
-        </p>
-      )}
-      {error && (
-        <p className="text-sm text-red-500" role="alert">
-          {error}
-        </p>
-      )}
-      {success && (
-        <p className="text-sm text-green-600" role="status">
-          {success}
-        </p>
+      {(status || error || success) && (
+        <div className="mt-1">
+          {status && (
+            <p className="text-xs text-slate-400" role="status">
+              {status}
+            </p>
+          )}
+          {error && (
+            <p className="text-xs text-red-500" role="alert">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="text-xs text-green-600" role="status">
+              {success}
+            </p>
+          )}
+        </div>
       )}
     </div>
   )
