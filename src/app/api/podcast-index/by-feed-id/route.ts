@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import chalk from 'chalk'
-import { PodcastResponseSchema } from '@/lib/schemas'
+import { PodcastResponseSchema } from '@/lib/schemas/api-schemas'
 
 export async function GET(request: Request) {
   try {
@@ -9,10 +9,7 @@ export async function GET(request: Request) {
     const feedId = searchParams.get('feedId')
 
     if (!feedId) {
-      return NextResponse.json(
-        { error: 'Feed ID parameter is required' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: 'Feed ID parameter is required' }, { status: 400 })
     }
 
     const apiKey = process.env.PODCAST_INDEX_API_KEY?.trim()
@@ -50,11 +47,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json()
-    console.log(
-      chalk.blue(
-        `Fetched full podcast details in ${Date.now() - detailsStart}ms`,
-      ),
-    )
+    console.log(chalk.blue(`Fetched full podcast details in ${Date.now() - detailsStart}ms`))
 
     if (!data.feed) {
       return NextResponse.json({ error: 'Podcast not found' }, { status: 404 })
@@ -63,14 +56,8 @@ export async function GET(request: Request) {
     const validated = PodcastResponseSchema.safeParse(data.feed)
 
     if (!validated.success) {
-      console.error(
-        'Validation errors:',
-        JSON.stringify(validated.error.errors, null, 2),
-      )
-      return NextResponse.json(
-        { error: validated.error.errors },
-        { status: 400 },
-      )
+      console.error('Validation errors:', JSON.stringify(validated.error.errors, null, 2))
+      return NextResponse.json({ error: validated.error.errors }, { status: 400 })
     }
 
     return NextResponse.json(validated.data)

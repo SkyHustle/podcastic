@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import type { TrendingPodcastsResponse, PodcastSearchResponse } from '@/lib/schemas'
+import type { TrendingPodcastsResponse, PodcastSearchResponse } from '@/lib/schemas/api-schemas'
 import { PodcastImage } from '@/lib/utils/image'
 import Spinner from './Spinner'
 

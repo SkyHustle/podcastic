@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useMemo, useReducer, useRef } from 'react'
-import type { Episode as DBEpisode } from '@/lib/schemas'
+import type { Episode as DBEpisode } from '@/lib/schemas/db-schemas'
 
 // Extend the database Episode type with our audio structure
 export interface Episode extends Omit<DBEpisode, 'enclosure_url' | 'enclosure_type'> {

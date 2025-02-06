@@ -1,8 +1,10 @@
 'use client'
 
 import { useQuery, useMutation } from '@tanstack/react-query'
-import type { Podcast, PodcastEpisodesResponse, Episode as EpisodeType } from '@/lib/schemas'
-import { PodcastSearch } from '@/components/PodcastSearch'
+import type { PodcastEpisodesResponse } from '@/lib/schemas/api-schemas'
+import type { Podcast } from '@/lib/schemas/db-schemas'
+import type { Episode as EpisodeType } from '@/lib/schemas/db-schemas'
+
 import Link from 'next/link'
 import { PodcastImage } from '@/lib/utils/image'
 import React from 'react'

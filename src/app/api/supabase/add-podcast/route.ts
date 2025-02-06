@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import chalk from 'chalk'
 import { sanitizeHtml } from '@/lib/utils/html'
-import type { PodcastInsert } from '@/lib/schemas'
+import type { PodcastInsert } from '@/lib/schemas/db-schemas'
 
 function transformPodcastForDb(podcast: any): PodcastInsert {
   return {
@@ -63,10 +63,7 @@ export async function POST(request: Request) {
 
     if (existingPodcast) {
       console.log(chalk.blue(`Found existing podcast: ${podcast.title}`))
-      return NextResponse.json(
-        { source: 'database', podcast: existingPodcast },
-        { status: 200 },
-      )
+      return NextResponse.json({ source: 'database', podcast: existingPodcast }, { status: 200 })
     }
 
     // If podcast doesn't exist, insert it
@@ -79,17 +76,11 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('Failed to store podcast:', insertError)
-      return NextResponse.json(
-        { error: 'Failed to store podcast' },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: 'Failed to store podcast' }, { status: 500 })
     }
 
     console.log(chalk.green(`Added new podcast: ${podcast.title}`))
-    return NextResponse.json(
-      { source: 'api', podcast: insertedPodcast },
-      { status: 201 },
-    )
+    return NextResponse.json({ source: 'api', podcast: insertedPodcast }, { status: 201 })
   } catch (error) {
     console.error('Error saving podcast:', error)
     return NextResponse.json(

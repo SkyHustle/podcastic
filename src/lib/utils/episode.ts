@@ -1,4 +1,4 @@
-import type { Episode as DBEpisode } from '@/lib/schemas'
+import type { Episode as DBEpisode } from '@/lib/schemas/db-schemas'
 import type { Episode } from '@/components/AudioProvider'
 
 export function formatEpisode(dbEpisode: DBEpisode): Episode {

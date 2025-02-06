@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { type EpisodeInsert } from '@/lib/schemas'
+import { type EpisodeInsert } from '@/lib/schemas/db-schemas'
 import chalk from 'chalk'
 import { supabase } from '@/lib/supabase'
 
@@ -87,6 +87,9 @@ export async function POST(request: Request) {
     return NextResponse.json(savedEpisodes)
   } catch (error) {
     console.error('Error processing request:', error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 },
+    )
   }
 }

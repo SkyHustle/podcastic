@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import chalk from 'chalk'
-import { PodcastSchema } from '@/lib/schemas'
+import { PodcastSchema } from '@/lib/schemas/db-schemas'
 
 export async function GET(request: Request) {
   try {
@@ -9,10 +9,7 @@ export async function GET(request: Request) {
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Podcast ID is required' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: 'Podcast ID is required' }, { status: 400 })
     }
 
     const { data: podcast, error } = await supabase
@@ -23,10 +20,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Failed to fetch podcast:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch podcast' },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: 'Failed to fetch podcast' }, { status: 500 })
     }
 
     if (!podcast) {
@@ -37,14 +31,8 @@ export async function GET(request: Request) {
     const validated = PodcastSchema.safeParse(podcast)
 
     if (!validated.success) {
-      console.error(
-        'Podcast validation errors:',
-        JSON.stringify(validated.error.errors, null, 2),
-      )
-      return NextResponse.json(
-        { error: 'Invalid podcast data structure' },
-        { status: 500 },
-      )
+      console.error('Podcast validation errors:', JSON.stringify(validated.error.errors, null, 2))
+      return NextResponse.json({ error: 'Invalid podcast data structure' }, { status: 500 })
     }
 
     console.log(chalk.blue(`Fetched podcast: ${podcast.title}`))
