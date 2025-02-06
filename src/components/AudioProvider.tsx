@@ -29,6 +29,7 @@ interface PublicPlayerActions {
   setPlaybackRate: (rate: number) => void
   toggleMute: () => void
   isPlaying: (episode?: Episode) => boolean
+  reset: () => void
 }
 
 export type PlayerAPI = PlayerState & PublicPlayerActions
@@ -41,6 +42,7 @@ const enum ActionKind {
   SET_CURRENT_TIME = 'SET_CURRENT_TIME',
   SET_DURATION = 'SET_DURATION',
   SET_PLAYBACK_RATE = 'SET_PLAYBACK_RATE',
+  RESET = 'RESET',
 }
 
 type Action =
@@ -51,6 +53,7 @@ type Action =
   | { type: ActionKind.SET_CURRENT_TIME; payload: number }
   | { type: ActionKind.SET_DURATION; payload: number }
   | { type: ActionKind.SET_PLAYBACK_RATE; payload: number }
+  | { type: ActionKind.RESET }
 
 const AudioPlayerContext = createContext<PlayerAPI | null>(null)
 
@@ -70,6 +73,15 @@ function audioReducer(state: PlayerState, action: Action): PlayerState {
       return { ...state, duration: action.payload }
     case ActionKind.SET_PLAYBACK_RATE:
       return { ...state, playbackRate: action.payload }
+    case ActionKind.RESET:
+      return {
+        playing: false,
+        muted: false,
+        duration: 0,
+        currentTime: 0,
+        episode: null,
+        playbackRate: 1,
+      }
   }
 }
 
@@ -90,7 +102,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (episode) {
           dispatch({ type: ActionKind.SET_META, payload: episode })
 
-          if (playerRef.current && playerRef.current.currentSrc !== episode.audio.src) {
+          // Always set the source if we have an episode, not just when it's different
+          if (playerRef.current) {
             let playbackRate = playerRef.current.playbackRate
             playerRef.current.src = episode.audio.src
             playerRef.current.load()
@@ -131,6 +144,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return episode
           ? state.playing && playerRef.current?.currentSrc === episode.audio.src
           : state.playing
+      },
+      reset() {
+        if (playerRef.current) {
+          playerRef.current.pause()
+          playerRef.current.currentTime = 0
+          playerRef.current.src = ''
+        }
+        dispatch({ type: ActionKind.RESET })
       },
     }
   }, [state.playing])
@@ -192,7 +213,12 @@ export function useAudioPlayer(episode?: Episode) {
         player!.play(episode)
       },
       toggle() {
-        player!.toggle(episode)
+        if (player!.episode === null) {
+          // If no episode is playing (after reset), start playing the current episode
+          player!.play(episode)
+        } else {
+          player!.toggle(episode)
+        }
       },
       get playing() {
         return player!.isPlaying(episode)

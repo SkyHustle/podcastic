@@ -25,14 +25,28 @@ function formatHumanTime(seconds: number) {
   }, ${s} second${s === 1 ? '' : 's'}`
 }
 
+function CloseIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M18 6L6 18" />
+      <path d="M6 6L18 18" />
+    </svg>
+  )
+}
+
 export function AudioPlayer() {
   let player = useAudioPlayer()
 
   let wasPlayingRef = useRef(false)
 
-  let [currentTime, setCurrentTime] = useState<number | null>(
-    player.currentTime,
-  )
+  let [currentTime, setCurrentTime] = useState<number | null>(player.currentTime)
 
   useEffect(() => {
     setCurrentTime(null)
@@ -43,7 +57,15 @@ export function AudioPlayer() {
   }
 
   return (
-    <div className="flex items-center gap-6 bg-white/90 px-4 py-4 shadow shadow-slate-200/80 ring-1 ring-slate-900/5 backdrop-blur-sm md:px-6">
+    <div className="relative flex items-center gap-6 bg-white/90 px-4 py-4 shadow shadow-slate-200/80 ring-1 ring-slate-900/5 backdrop-blur-sm md:px-6">
+      <button
+        type="button"
+        onClick={() => player.reset()}
+        className="absolute right-4 top-4 rounded-md p-1 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+        aria-label="Close player"
+      >
+        <CloseIcon className="h-5 w-5 stroke-slate-500 hover:stroke-slate-700" />
+      </button>
       <div className="hidden md:block">
         <PlayButton player={player} />
       </div>
@@ -78,11 +100,11 @@ export function AudioPlayer() {
                 player.play()
               }
             }}
-            numberFormatter={{ format: formatHumanTime } as Intl.NumberFormat}
             onChangeStart={() => {
               wasPlayingRef.current = player.playing
               player.pause()
             }}
+            numberFormatter={{ format: formatHumanTime } as Intl.NumberFormat}
           />
           <div className="flex items-center gap-4">
             <div className="flex items-center">

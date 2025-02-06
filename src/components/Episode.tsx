@@ -33,10 +33,16 @@ export function Episode({ episode }: { episode: AudioEpisode }) {
     <article aria-labelledby={`episode-${episode.id}-title`} className="py-10 sm:py-12">
       <Container>
         <div className="flex flex-col items-start">
-          <h2 id={`episode-${episode.id}-title`} className="mt-2 text-base font-bold text-slate-900 sm:text-lg">
+          <h2
+            id={`episode-${episode.id}-title`}
+            className="mt-2 text-base font-bold text-slate-900 sm:text-lg"
+          >
             <Link href={`/episode/${episode.id}`}>{episode.title}</Link>
           </h2>
-          <FormattedDate date={date} className="order-first font-mono text-sm leading-7 text-slate-500" />
+          <FormattedDate
+            date={date}
+            className="order-first font-mono text-sm leading-7 text-slate-500"
+          />
           <p className="mt-1 text-sm leading-6 text-slate-700 sm:text-base sm:leading-7">
             {stripHtmlAndUrls(episode.description)}
           </p>
@@ -65,7 +71,7 @@ export function Episode({ episode }: { episode: AudioEpisode }) {
               className="flex items-center text-sm font-bold leading-6 text-pink-500 hover:text-pink-700 active:text-pink-900"
               aria-label={`Show notes for episode ${episode.title}`}
             >
-              Show notes
+              Show notes & Voice Control
             </Link>
           </div>
         </div>
