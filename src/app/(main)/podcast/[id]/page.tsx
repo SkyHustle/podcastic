@@ -105,7 +105,11 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
 
   const queryClient = useQueryClient()
 
-  const { data: dbEpisodes, isLoading: isDbEpisodesLoading } = useQuery({
+  const {
+    data: dbEpisodes,
+    isLoading: isDbEpisodesLoading,
+    refetch: refetchDbEpisodes,
+  } = useQuery({
     queryKey: ['saved-episodes', params.id],
     queryFn: () => fetchSavedEpisodes(params.id),
     staleTime: 1000 * 60 * 60 * 12, // 12 hours
@@ -114,15 +118,13 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
   })
 
   const {
-    data: savedEpisodes,
+    mutateAsync: saveEpisodesMutation,
     isPending: isSavingEpisodes,
     error: saveEpisodesError,
-    mutate: saveEpisodesMutation,
   } = useMutation({
     mutationFn: (data: { episodes: PodcastEpisodesResponse; podcast_id: number }) =>
       saveEpisodes(data.episodes, data.podcast_id),
     onSuccess: (data, variables) => {
-      // Update the saved episodes cache with the new data
       if (podcast?.id) {
         queryClient.setQueryData(['saved-episodes', podcast.id], data)
       }
@@ -131,13 +133,19 @@ export default function PodcastPage({ params }: { params: { id: number } }) {
 
   // When we get episodes from Podcast Index, save them to our database
   useEffect(() => {
-    if (podcastIndexEpisodes && podcast?.id && !dbEpisodes?.length) {
-      saveEpisodesMutation({
-        episodes: podcastIndexEpisodes,
-        podcast_id: podcast.id,
-      })
+    async function saveAndRefetchEpisodes() {
+      if (podcastIndexEpisodes && podcast?.id && !dbEpisodes?.length) {
+        await saveEpisodesMutation({
+          episodes: podcastIndexEpisodes,
+          podcast_id: podcast.id,
+        })
+        // Refetch db episodes after saving to ensure we have the latest data
+        await refetchDbEpisodes()
+      }
     }
-  }, [podcastIndexEpisodes, podcast?.id, saveEpisodesMutation, dbEpisodes])
+
+    saveAndRefetchEpisodes()
+  }, [podcastIndexEpisodes, podcast?.id, saveEpisodesMutation, dbEpisodes, refetchDbEpisodes])
 
   if (podcastError) {
     return (
