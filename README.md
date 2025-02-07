@@ -2,6 +2,9 @@
 
 A modern, feature-rich podcast discovery and listening platform built with Next.js and React.
 
+<img width="864" alt="Screenshot 2025-02-07 at 11 49 14 AM" src="https://github.com/user-attachments/assets/7f7d36fa-b602-4c65-a3da-d1ce9f56f39a" />
+
+
 ## Features
 
 - 🔍 **Advanced Podcast Search**: Search through a vast library of podcasts using the Podcast Index API
