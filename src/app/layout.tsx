@@ -1,6 +1,7 @@
 import { type Metadata } from 'next'
 import Providers from '@/components/Providers'
 import '@/styles/tailwind.css'
+import { Analytics } from '@vercel/analytics/react'
 
 export const metadata: Metadata = {
   title: {
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full">{children}</div>
         </Providers>
       </body>
+      <Analytics />
     </html>
   )
 }
