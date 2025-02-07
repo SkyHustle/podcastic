@@ -7,6 +7,7 @@ A modern, feature-rich podcast discovery and listening platform built with Next.
 - 🔍 **Advanced Podcast Search**: Search through a vast library of podcasts using the Podcast Index API
 - 📈 **Trending Podcasts**: Discover what's popular in the podcast world
 - 🎵 **Web Audio Player**: Built-in audio player with waveform visualization
+- 🎤 **Voice Controls**: Hands-free podcast control with voice commands
 - 📱 **Responsive Design**: Seamless experience across all devices
 - 🔄 **Real-time Updates**: Powered by React Query for efficient data fetching
 - 💾 **Persistent Storage**: Podcast data stored in Supabase
@@ -92,6 +93,19 @@ src/
 - Custom built audio player with waveform visualization
 - Support for playback controls
 - Persistent audio state across navigation
+- Voice control integration for hands-free operation
+
+### Voice Controls
+
+- Natural voice command recognition using Web Speech API
+- Supported commands:
+  - **Playback**: "play", "pause", "stop"
+  - **Navigation**: "forward", "skip forward", "rewind", "go back"
+  - **Speed Control**: "speed up", "faster", "slow down", "slower", "normal speed"
+  - **Volume**: "mute", "unmute"
+- Real-time command processing
+- Continuous listening mode with automatic reconnection
+- Visual feedback for voice recognition status
 
 ### Trending Podcasts
 
